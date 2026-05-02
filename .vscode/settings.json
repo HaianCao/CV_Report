@@ -2,16 +2,6 @@
     "latex-workshop.latex.autoBuild.run": "onFileChange",
     "latex-workshop.latex.tools": [
         {
-            "name": "pdflatex",
-            "command": "pdflatex",
-            "args": [
-                "-synctex=1",
-                "-interaction=nonstopmode",
-                "-file-line-error",
-                "%DOC%"
-            ]
-        },
-        {
             "name": "xelatex",
             "command": "xelatex",
             "args": [
@@ -31,16 +21,7 @@
     ],
     "latex-workshop.latex.recipes": [
         {
-            "name": "pdflatex ➞ biber ➞ pdflatex × 2",
-            "tools": [
-                "pdflatex",
-                "biber",
-                "pdflatex",
-                "pdflatex"
-            ]
-        },
-        {
-            "name": "xelatex ➞ biber ➞ xelatex × 2",
+            "name": "xelatex -> biber -> xelatex*2",
             "tools": [
                 "xelatex",
                 "biber",
@@ -49,7 +30,7 @@
             ]
         }
     ],
-    "latex-workshop.latex.recipe.default": "xelatex ➞ biber ➞ xelatex × 2",
+    "latex-workshop.latex.recipe.default": "first",
     "latex-workshop.latex.magic.args": [
         "-synctex=1",
         "-interaction=nonstopmode",
