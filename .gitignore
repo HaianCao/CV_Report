@@ -1,0 +1,13 @@
+*
+!LATEX_tempate/
+!LATEX_template/
+!LATEX_template/chapters/
+!LATEX_template/images/
+!LATEX_template/images/*
+!*.pdf
+!*.tex
+!.gitignore
+!*.bib
+!*.md
+!.vscode/
+!.vscode/settings.json
