@@ -42,7 +42,7 @@ Biểu đồ ở Hình~\ref{fig:age-distribution} cho thấy phân bố tuổi c
 
 Sự lệch phân bố này có ý nghĩa quan trọng đối với bài toán hồi quy tuổi. Nếu mô hình được huấn luyện trực tiếp trên dữ liệu gốc mà không có cơ chế cân bằng hoặc tăng cường dữ liệu, mô hình có xu hướng học tốt hơn ở các nhóm tuổi xuất hiện nhiều, đặc biệt là nhóm người trưởng thành trẻ, trong khi dễ sai lệch hơn ở các nhóm rất trẻ hoặc rất già. 
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=1\linewidth,height=0.6\linewidth]{images/age_distribution.png}
 	\caption{Phân phối độ tuổi toàn bộ tập dữ liệu UTKFace.}
@@ -64,14 +64,14 @@ Hình~\ref{fig:gender-distribution} cho thấy tập dữ liệu khá cân bằn
 
 Tuy nhiên, đường mật độ trong Hình~\ref{fig:age-gender-density} chỉ ra rằng phân bố tuổi giữa hai giới không hoàn toàn giống nhau. Nhóm nữ tập trung mạnh hơn quanh vùng 20--35 tuổi, trong khi nhóm nam có độ trải rộng lớn hơn và kéo dài nhiều hơn về các độ tuổi cao. Điều này cho thấy nếu mô hình mắc lỗi khác nhau giữa nam và nữ, nguyên nhân không chỉ đến từ số lượng ảnh mà còn đến từ hình thái dữ liệu và cấu trúc độ tuổi đi kèm mỗi nhóm.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.7\linewidth]{images/gender_distribution.png}
 	\caption{Tỷ lệ giới tính trong toàn bộ tập dữ liệu.}
 	\label{fig:gender-distribution}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 	\centering
 	\includegraphics[width=0.92\linewidth]{images/age_gender_distribution.png}
 	\caption{Đường cong mật độ độ tuổi theo giới tính.}
@@ -110,6 +110,8 @@ Biểu đồ violin ở Hình~\ref{fig:race-age-distribution} cho thấy độ t
 Từ các biểu đồ trên có thể rút ra các nhận xét chính. Thứ nhất, UTKFace là bộ dữ liệu đủ lớn và có nhãn phong phú, phù hợp cho bài toán hồi quy tuổi. Thứ hai, phân bố tuổi không đồng đều, đặc biệt tập trung mạnh ở nhóm 21--40 tuổi, nên mô hình dễ thiên lệch về vùng tuổi này. Thứ ba, dữ liệu tồn tại mất cân bằng theo chủng tộc và sự khác biệt về phân bố tuổi giữa các nhóm nhân khẩu học, vì vậy cần đánh giá mô hình theo nhiều góc nhìn khác nhau.
 
 \section{Thiết lập thực nghiệm}
+
+Phần này trình bày chi tiết về quy trình và các điều kiện được thiết lập để tiến hành huấn luyện và đánh giá mô hình. Các nội dung chính bao gồm: cấu hình môi trường phần cứng máy tính, các bước tiền xử lý và chia tách tập dữ liệu, phương pháp trích xuất đặc trưng hình ảnh (HOG, LBP, SIFT), thiết lập tham số cho các mô hình học máy (SVR, Random Forest, MLP) và cuối cùng là các tiêu chí đánh giá hiệu năng (RMSE, MAE).
 
 \subsection{Môi trường phần cứng}
 Các thí nghiệm được thực hiện trên máy tính cá nhân với cấu hình phần cứng như sau:

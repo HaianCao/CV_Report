@@ -1,1 +1,23 @@
-\chapter{Kết luận}
+% !TeX root = ../Main.tex
+\chapter{Kết luận và Hướng phát triển}
+
+\section{Kết luận}
+Tiểu luận này đã hoàn thành mục tiêu nghiên cứu và xây dựng quy trình hồi quy tuổi từ ảnh khuôn mặt. Dựa trên tập dữ liệu chuẩn UTKFace, nhóm đã thực hiện đánh giá toàn diện từ khâu phân tích, tiền xử lý dữ liệu đến trích xuất đặc trưng và tối ưu hóa mô hình học máy. Một số kết luận chính được rút ra như sau:
+
+\begin{itemize}
+	\item \textbf{Hiệu quả của phương pháp trích xuất đặc trưng:} Đặc trưng định hướng gradient (HOG) tỏ ra vượt trội so với LBP và SIFT trong việc nắm bắt cấu trúc hình thái khuôn mặt để dự đoán độ tuổi. Khi kết hợp HOG với mạng nơ-ron đa tầng (MLP), mô hình đạt hiệu năng cao nhất với sai số tuyệt đối trung bình (MAE) là 6.85 tuổi.
+	\item \textbf{Ảnh hưởng của mất cân bằng dữ liệu:} Phân tích lỗi chi tiết cho thấy mô hình hoạt động hiệu quả trên nhóm người trưởng thành trẻ tuổi và giới tính cân bằng. Tuy nhiên, sai số dự đoán tăng mạnh đối với nhóm người cao tuổi (đặc biệt trên 80 tuổi) và các chủng tộc thiểu số (như Black, Others). Nguyên nhân chính là do sự thiếu hụt mẫu huấn luyện và độ phân tán lớn của đặc điểm lão hóa ở các nhóm này.
+	\item \textbf{Tác động của giảm chiều dữ liệu (PCA):} Phương pháp PCA đóng vai trò quan trọng trong việc loại bỏ nhiễu và giảm thời gian tính toán đối với mô hình SVR (khi giảm xuống 40 chiều, RMSE của SVR giảm từ 12.65 xuống 12.22). Ngược lại, đối với mạng MLP có khả năng tự động học các biểu diễn phức tạp, việc nén dữ liệu bằng phép chiếu tuyến tính như PCA làm suy giảm thông tin và giảm độ chính xác tổng thể so với dữ liệu gốc.
+\end{itemize}
+
+Nhìn chung, mô hình HOG kết hợp MLP là một giải pháp khá tốt, có tốc độ huấn luyện nhanh và mang lại độ chính xác khả quan đối với dữ liệu thực tế. Tuy nhiên, những hạn chế khi đối diện với nhóm đối tượng thiểu số vẫn là một thách thức lớn cần giải quyết.
+
+\section{Hướng phát triển}
+Từ những kết quả và hạn chế đã được thảo luận, một số hướng phát triển tiềm năng trong tương lai để cải thiện độ chính xác và tính bền vững của mô hình bao gồm:
+
+\begin{itemize}
+	\item \textbf{Khắc phục vấn đề mất cân bằng dữ liệu:} Áp dụng các kỹ thuật sinh dữ liệu nhân tạo (Data Augmentation), SMOTE hoặc Generative Adversarial Networks (GANs) để bổ sung mẫu khuôn mặt cho nhóm người cao tuổi và các chủng tộc thiểu số. Bên cạnh đó, có thể thiết kế lại hàm mất mát (loss function) bằng cách gán trọng số cao hơn cho các nhóm dữ liệu có tần suất xuất hiện thấp để mô hình tập trung tối ưu cho các nhóm này.
+	\item \textbf{Sử dụng Học sâu (Deep Learning) toàn trình:} Thay vì dựa vào các đặc trưng thiết kế thủ công (hand-crafted features) như HOG, nghiên cứu trong tương lai có thể sử dụng các mạng nơ-ron tích chập (CNN) sâu đã được huấn luyện trước trên tập dữ liệu khuôn mặt quy mô lớn (như VGGFace, ResNet) để tự động trích xuất các đặc trưng biểu diễn mức cao phong phú hơn.
+	\item \textbf{Chuyển đổi cách tiếp cận bài toán:} Khai thác bài toán dự đoán tuổi dưới dạng phân loại thứ tự (Ordinal Regression) hoặc dự đoán một phân bố xác suất tuổi (Label Distribution Learning) thay vì chỉ hồi quy ra một giá trị điểm duy nhất. Các phương pháp này đã được các nghiên cứu chứng minh là phản ánh tốt hơn tính chất thay đổi liên tục của quá trình lão hóa.
+	\item \textbf{Đánh giá chéo trên nhiều bộ dữ liệu:} Mở rộng việc kiểm thử mô hình trên các bộ dữ liệu đa dạng hơn ngoài UTKFace (như MORPH-II, FG-NET, v.v.) để kiểm chứng độ mạnh mẽ và khả năng tổng quát hóa trong các điều kiện chụp ảnh phức tạp như thiếu sáng, góc chụp nghiêng, hay bị che khuất.
+\end{itemize}
