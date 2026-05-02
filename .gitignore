@@ -1,0 +1,36 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.bcf
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.run.xml
+*.synctex.gz
+*.synctex
+*.pdf
+
+# latexmk
+latexmkrc
+
+# Editor and OS files
+*.swp
+*~
+.vscode/
+.DS_Store
+Thumbs.db
+
+# MiKTeX temporary files
+*.fmt
+
+# Ignore compiled directories if any
+_build/
+
+# Keep images, source and bib files tracked
+!images/
+!thesis.bib

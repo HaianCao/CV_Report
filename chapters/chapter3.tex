@@ -1,0 +1,47 @@
+\chapter{Phương pháp giải quyết}
+
+\section{Tổng quan pipeline}
+Phần này mô tả chuỗi xử lý chính của hệ thống theo thứ tự: Input $\rightarrow$ Preprocessing $\rightarrow$ Segmentation/Detection $\rightarrow$ Feature Representation $\rightarrow$ Decision $\rightarrow$ Evaluation $\rightarrow$ Visualization.
+
+\begin{itemize}
+    \item \textbf{Input:} mô tả nguồn dữ liệu ảnh hoặc video, định dạng, kích thước và cách thu thập.
+    \item \textbf{Preprocessing:} nêu các bước chuẩn hóa, resize, crop, lọc nhiễu hoặc cân bằng sáng.
+    \item \textbf{Segmentation/Detection:} chỉ ra cách tách vùng quan tâm hoặc định vị đối tượng.
+    \item \textbf{Feature Representation:} mô tả đặc trưng thủ công hoặc đặc trưng học được từ mô hình.
+    \item \textbf{Decision:} trình bày bước phân loại, nhận dạng, đếm, hồi quy hoặc suy luận cuối cùng.
+    \item \textbf{Evaluation:} kết nối đầu ra với các chỉ số định lượng và phân tích định tính.
+    \item \textbf{Visualization:} hiển thị mask, bounding box, heatmap, biểu đồ hoặc ví dụ thành công/thất bại.
+\end{itemize}
+
+\section{Dữ liệu đầu vào và tiền xử lý}
+\subsection{Nguồn dữ liệu}
+Nêu bộ dữ liệu được sử dụng, số lượng ảnh, cách gán nhãn, quy ước đặt tên và các tiêu chí loại bỏ mẫu lỗi nếu có.
+
+\subsection{Làm sạch và chuẩn hóa}
+Mô tả các bước như chuyển đổi kích thước, chuẩn hóa giá trị pixel, cân bằng histogram, cắt vùng quan tâm hoặc đồng bộ nhãn.
+
+\subsection{Chia tập và cách kiểm tra}
+Trình bày tỉ lệ train/validation/test, chiến lược chia dữ liệu và cách đảm bảo không rò rỉ dữ liệu giữa các tập.
+
+\section{Phương pháp cơ sở}
+Mỗi giai đoạn chính nên có ít nhất hai phương pháp để so sánh. Một phương pháp làm baseline, phương pháp còn lại là cải tiến hoặc thay thế.
+
+\subsection{Phương pháp cơ sở thứ nhất}
+Mô tả ngắn gọn một cách tiếp cận chuẩn, dễ triển khai và làm mốc so sánh.
+
+\subsection{Phương pháp cơ sở thứ hai}
+Mô tả một cách tiếp cận khác để đối chiếu về độ chính xác, tốc độ và độ ổn định.
+
+\section{Xây dựng hệ thống đề xuất}
+\subsection{Thiết kế mô-đun}
+Trình bày cách tổ chức hệ thống thành các khối riêng: đọc dữ liệu, xử lý ảnh, trích đặc trưng, mô hình suy luận và phần xuất kết quả.
+
+\subsection{Phương pháp cải tiến}
+Nêu rõ điểm khác biệt so với baseline, ví dụ thêm một bước tiền xử lý, thay mô hình trích đặc trưng, hoặc chỉnh siêu tham số.
+
+\subsection{Hậu xử lý}
+Mô tả các bước như lọc kết quả nhỏ, nối vùng, chuẩn hóa nhãn, làm mịn mask hoặc sắp xếp đầu ra.
+
+\section{Trực quan hóa kết quả trung gian}
+Phần này nên dành cho các hình minh họa quan trọng như ảnh đầu vào, ảnh sau tiền xử lý, mask dự đoán, bounding box, attention map hoặc các biểu đồ so sánh.
+
