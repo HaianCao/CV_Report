@@ -1,1 +1,116 @@
-\chapter{Bàn luận và đánh giá}
+\chapter{Thảo luận}
+
+\section{Phân tích lỗi sai}
+Phần này đánh giá chi tiết sai số dự đoán của mô hình tốt nhất (HOG + MLP) trên các nhóm thuộc tính nhân khẩu học để xác định các giới hạn của mô hình.
+
+\subsection{Sai số theo nhóm tuổi}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\linewidth]{images/error_by_age_group.png}
+	\caption{Sai số dự đoán (MAE) phân loại theo từng nhóm tuổi.}
+	\label{fig:error-age}
+\end{figure}
+
+Dựa vào Hình~\ref{fig:error-age}, sai số dự đoán có xu hướng tăng dần theo độ tuổi. Nhóm trẻ em (0-5 tuổi) có MAE thấp nhất (3.4). Nhóm thanh niên (21-30 tuổi) đạt MAE là 5.3. Ngược lại, mức sai số tăng mạnh ở các độ tuổi cao, đạt 12.7 ở nhóm 61-80 tuổi và 14.6 ở nhóm trên 80 tuổi. Sự gia tăng sai số này phản ánh độ phân tán lớn của đặc điểm lão hóa ở người cao tuổi và số lượng mẫu huấn luyện ít hơn so với nhóm thanh niên.
+
+\subsection{Sai số theo giới tính}
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=0.7\linewidth]{images/error_by_gender.png}
+	\caption{Sai số dự đoán (MAE) phân loại theo giới tính.}
+	\label{fig:error-gender}
+\end{figure}
+
+Hình~\ref{fig:error-gender} cho thấy MAE của nhóm nữ là 6.71, thấp hơn so với nhóm nam là 6.97. Mức chênh lệch 0.26 là rất nhỏ. Kết quả này cho thấy mô hình dự đoán đồng đều và không bị chênh lệch lớn giữa hai giới tính.
+
+\subsection{Sai số theo chủng tộc}
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=1\linewidth]{images/error_by_race.png}
+	\caption{Sai số dự đoán (MAE) trung bình theo từng chủng tộc.}
+	\label{fig:error-race}
+\end{figure}
+
+Phân tích Hình~\ref{fig:error-race}, chủng tộc White có sai số trung bình cao nhất (MAE = 7.66), tiếp đến là Black (7.07). Các chủng tộc Asian và Others có mức sai số thấp nhất (5.57 và 5.56). 
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=1\linewidth]{images/error_distribution_by_race_age.png}
+	\caption{Mật độ và phân tán của sai số dự đoán theo từng chủng tộc.}
+	\label{fig:error-dist-race}
+\end{figure}
+
+Biểu đồ violin (Hình~\ref{fig:error-dist-race}) giải thích lý do nhóm White và Black có MAE cao: phân bố sai số của hai nhóm này có phần đuôi dài (nhiều mẫu có sai số dự đoán lên tới 40-60 tuổi). Nhóm Asian có phân bố tập trung chủ yếu ở mức sai số thấp dưới 20 tuổi.
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=1\linewidth, height=1.5\linewidth]{images/error_by_race_and_age_group.png}
+	\caption{Phân tích MAE theo nhóm tuổi cho từng chủng tộc.}
+	\label{fig:error-race-age}
+\end{figure}
+
+Khi phân tích chi tiết theo từng độ tuổi trong mỗi chủng tộc (Hình~\ref{fig:error-race-age}), mô hình gặp khó khăn lớn nhất ở các nhóm cao tuổi thuộc các chủng tộc thiểu số. Cụ thể, nhóm 80+ của chủng tộc Others có sai số cực đại là 27.8, nhóm 80+ của Black có sai số 20.1. Nhóm White 80+ có sai số 13.9. Sự thiếu hụt dữ liệu huấn luyện cho người cao tuổi ở các chủng tộc này là nguyên nhân chính dẫn đến sai lệch lớn.
+
+\subsection{Đánh giá phương pháp huấn luyện chung và riêng rẽ}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\linewidth]{images/error_MLP_HOG_all_and_each_training.png}
+	\caption{So sánh MAE khi huấn luyện chung toàn bộ dữ liệu và huấn luyện riêng rẽ cho từng chủng tộc.}
+	\label{fig:error-training-strategy}
+\end{figure}
+
+Hình~\ref{fig:error-training-strategy} so sánh hiệu năng giữa một mô hình được huấn luyện trên toàn bộ dữ liệu ("Chung") và 5 mô hình được huấn luyện độc lập trên dữ liệu của từng chủng tộc ("Riêng rẽ"). Kết quả cho thấy mô hình "Chung" đạt MAE thấp hơn ở tất cả các nhóm chủng tộc. Ví dụ, chủng tộc White giảm sai số từ 8.25 xuống 7.66; chủng tộc Indian giảm từ 7.07 xuống 6.21. Điều này chứng minh rằng việc kết hợp toàn bộ dữ liệu giúp mô hình học được các đặc điểm lão hóa tổng quát tốt hơn. Việc chia nhỏ dữ liệu để huấn luyện riêng rẽ làm giảm kích thước tập huấn luyện, dẫn đến hiệu năng dự đoán kém hơn.
+
+\section{Phân tích khả năng giảm chiều dữ liệu}
+\label{sec:pca_analysis}
+Đặc trưng HOG có số chiều lớn, làm tăng thời gian tính toán của các mô hình như SVR và Random Forest. Phương pháp Phân tích Thành phần Chính (PCA) được sử dụng để giảm số chiều vector xuống các mức từ 10 đến 400 chiều.
+
+\begin{sidewaysfigure}
+	\centering
+	\includegraphics[width=1\linewidth]{images/error_PCA.png}
+	\caption{So sánh sai số RMSE theo số lượng thành phần chính (PCA) trên 3 mô hình.}
+	\label{fig:error-pca}
+\end{sidewaysfigure}
+
+\begin{table}[H]
+	\centering
+	\caption{Đánh giá RMSE của các mô hình theo mức độ giảm chiều PCA.}
+	\label{tab:pca-results}
+	\resizebox{\linewidth}{!}{
+		\begin{tabular}{rccc | rccc}
+			\toprule
+			\textbf{Số chiều} & \textbf{MLP} & \textbf{RF} & \textbf{SVR} & \textbf{Số chiều} & \textbf{MLP} & \textbf{RF} & \textbf{SVR} \\
+			\midrule
+			10 & 14.881 & 14.615 & 14.673 & 210 & 11.628 & 13.446 & 13.327 \\
+			20 & 14.409 & 13.722 & 13.395 & 220 & 11.762 & 13.485 & 13.360 \\
+			30 & 13.936 & 13.274 & 12.347 & 230 & 11.956 & 13.478 & 13.467 \\
+			40 & 14.106 & 13.203 & \textbf{12.223} & 240 & 11.710 & 13.488 & 13.575 \\
+			50 & 14.145 & 13.233 & 12.315 & 250 & 11.696 & 13.509 & 13.692 \\
+			60 & 13.543 & 13.282 & 12.268 & 260 & 11.868 & 13.515 & 13.764 \\
+			70 & 13.401 & 13.291 & 12.381 & 270 & 11.876 & 13.513 & 13.860 \\
+			80 & 13.099 & 13.266 & 12.386 & 280 & 11.585 & 13.547 & 13.951 \\
+			90 & 12.747 & 13.296 & 12.420 & 290 & 11.642 & 13.519 & 14.044 \\
+			100 & 12.504 & 13.318 & 12.513 & 300 & 11.687 & 13.537 & 14.119 \\
+			110 & 12.543 & 13.315 & 12.524 & 310 & 11.496 & 13.532 & 14.241 \\
+			120 & 12.251 & 13.356 & 12.611 & 320 & 11.751 & 13.561 & 14.337 \\
+			130 & 12.428 & 13.377 & 12.673 & 330 & 11.511 & 13.549 & 14.453 \\
+			140 & 12.162 & 13.374 & 12.742 & 340 & 11.588 & 13.573 & 14.487 \\
+			150 & 12.152 & 13.387 & 12.803 & 350 & 11.587 & 13.599 & 14.594 \\
+			160 & 12.127 & 13.410 & 12.871 & 360 & 11.592 & 13.597 & 14.696 \\
+			170 & 12.053 & 13.412 & 12.992 & 370 & 11.468 & 13.579 & 14.762 \\
+			180 & 12.143 & 13.406 & 13.037 & 380 & 11.635 & 13.607 & 14.807 \\
+			190 & 11.845 & 13.414 & 13.131 & 390 & \textbf{11.386} & 13.606 & 14.926 \\
+			200 & 12.025 & 13.440 & 13.221 & 400 & 11.651 & 13.595 & 14.972 \\
+			\midrule
+			\multicolumn{4}{c|}{} & \textbf{Gốc (8100D)} & \textbf{9.570} & 13.250 & 12.650 \\
+			\bottomrule
+		\end{tabular}
+	}
+\end{table}
+
+Dựa trên dữ liệu từ Hình~\ref{fig:error-pca} và Bảng~\ref{tab:pca-results}:
+\begin{itemize}
+	\item \textbf{Mô hình SVR:} SVR không dùng PCA đạt RMSE 12.65. Khi nén PCA xuống 40 chiều, RMSE của SVR giảm xuống mức tối ưu là 12.223. Đồ thị Hình~\ref{fig:error-pca} cho thấy đường biểu diễn của SVR đạt đáy tại 40 chiều và tăng dần khi số chiều cao hơn. PCA loại bỏ nhiễu và thông tin thừa, giúp SVR hoạt động chính xác và nhanh hơn đáng kể.
+	\item \textbf{Mô hình Random Forest:} Đường biểu diễn của RF đi ngang ở mức 13.2 đến 13.6 từ mốc 40 chiều trở đi, tương tự như khi dùng dữ liệu gốc. PCA không làm thay đổi lớn hiệu năng của mô hình này do bản chất cấu trúc cây quyết định (decision tree) đã bao gồm khả năng chọn lọc đặc trưng.
+	\item \textbf{Mô hình MLP:} MLP có xu hướng giảm dần sai số khi số lượng thành phần chính tăng lên và đạt mức tốt nhất là 11.386 tại 390 chiều. Tuy nhiên, kết quả này vẫn kém xa so với RMSE 9.570 khi sử dụng dữ liệu nguyên bản chưa nén. Khác với SVR, kiến trúc mạng nơ-ron đa tầng có khả năng tự động trích xuất các đặc trưng phi tuyến ẩn sâu từ dữ liệu thô cực kỳ tốt. Việc nén dữ liệu bằng phép chiếu tuyến tính như PCA trước khi đưa vào MLP đã vô tình loại bỏ nhiều thông tin quan trọng.
+\end{itemize}

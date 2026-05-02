@@ -1,1 +1,216 @@
-\chapter{kết quả thực nghiệm}
+% !TeX root = ../Main.tex
+\chapter{Thực nghiệm và Kết quả}
+
+Chương này trình bày chi tiết về toàn bộ quá trình thực nghiệm nhằm đánh giá hiệu năng của các phương pháp đề xuất. Nội dung chương bao gồm phân tích đặc điểm bộ dữ liệu UTKFace, mô tả quy trình thiết lập môi trường và cấu hình tham số cho các mô hình học máy. Cuối cùng, các kết quả dự đoán tuổi thực tế sẽ được tổng hợp, trực quan hóa và so sánh dựa trên các độ đo sai số chuẩn (RMSE, MAE) để từ đó lựa chọn ra mô hình tối ưu nhất cho bài toán.
+
+\section{Bộ dữ liệu}
+Trong tiểu luận này, tập dữ liệu sử dụng cho bài toán hồi quy tuổi là UTKFace~\cite{UTKFaceKaggle}, một bộ ảnh khuôn mặt công khai được lấy từ Kaggle. Tập dữ liệu này chứa tổng cộng 23.705 ảnh, mỗi ảnh đi kèm nhãn được mã hóa trực tiếp trong tên tệp theo mẫu:
+
+\begin{center}
+\texttt{[age]\_[gender]\_[race]\_[date\&time].jpg}
+\end{center}
+
+Trong đó:
+\begin{itemize}
+	\item \texttt{age} là tuổi của đối tượng, được biểu diễn bởi một số nguyên từ 0 đến 116.
+	\item \texttt{gender} nhận giá trị 0 cho nam và 1 cho nữ.
+	\item \texttt{race} nhận giá trị từ 0 đến 4, tương ứng với White, Black, Asian, Indian và Others.
+	\item \texttt{date\&time} là dấu thời gian thu thập ảnh theo định dạng \texttt{yyyymmddHHMMSSFFF}.
+\end{itemize}
+
+Việc nhãn được nhúng sẵn trong tên ảnh giúp quá trình xây dựng tập dữ liệu thuận tiện hơn vì không cần gán nhãn thủ công. Tuy nhiên, cách tổ chức này cũng đòi hỏi bước tiền xử lý cẩn thận để đọc đúng nhãn, loại bỏ các tệp lỗi và kiểm tra những mẫu có thông tin bất thường. Trong bài toán này, nhãn tuổi là đầu ra chính cần dự đoán; còn giới tính và chủng tộc được dùng như thông tin bổ sung để phân tích phân bố dữ liệu, đánh giá mức độ phụ thuộc của dữ liệu vào hai yếu tố này dựa trên đặc điểm ảnh, và xem xét ảnh hưởng của chúng đến kết quả dự đoán tuổi.
+
+\subsection{Phân tích toàn bộ tập dữ liệu}
+Bảng~\ref{tab:global-age-stats} tóm tắt nhanh các thống kê mô tả của biến tuổi trên toàn bộ 23.705 ảnh. Có thể thấy tuổi trung bình là 33.30, trung vị là 29 và độ lệch chuẩn xấp xỉ 19.89, cho thấy phân bố tuổi có độ phân tán lớn.
+
+\begin{table}[H]
+	\centering
+	\caption{Thống kê mô tả độ tuổi toàn cục trên tập UTKFace.}
+	\label{tab:global-age-stats}
+	\resizebox{\textwidth}{!}{%
+	\begin{tabular}{c|c|c|c|c|c|c|c}
+		\toprule
+		\textbf{Count} & \textbf{Mean} & \textbf{Std} & \textbf{Min} & \textbf{25\%} & \textbf{50\% (Median)} & \textbf{75\%} & \textbf{Max} \\
+		\midrule
+		23705 & 33.300907 & 19.885708 & 1 & 23 & 29 & 45 & 116 \\
+		\bottomrule
+	\end{tabular}%
+	}
+\end{table}
+
+Biểu đồ ở Hình~\ref{fig:age-distribution} cho thấy phân bố tuổi của toàn bộ tập dữ liệu không đồng đều. Phần lớn ảnh tập trung trong khoảng 21--40 tuổi, với đỉnh phân bố rơi vào vùng 25--30 tuổi. Ngoài cụm chính này, tập dữ liệu vẫn có một lượng ảnh đáng kể ở nhóm trẻ nhỏ từ 0--5 tuổi và một đuôi phân bố kéo dài về phía các độ tuổi lớn hơn 60.
+
+Sự lệch phân bố này có ý nghĩa quan trọng đối với bài toán hồi quy tuổi. Nếu mô hình được huấn luyện trực tiếp trên dữ liệu gốc mà không có cơ chế cân bằng hoặc tăng cường dữ liệu, mô hình có xu hướng học tốt hơn ở các nhóm tuổi xuất hiện nhiều, đặc biệt là nhóm người trưởng thành trẻ, trong khi dễ sai lệch hơn ở các nhóm rất trẻ hoặc rất già. 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\linewidth,height=0.6\linewidth]{images/age_distribution.png}
+	\caption{Phân phối độ tuổi toàn bộ tập dữ liệu UTKFace.}
+	\label{fig:age-distribution}
+\end{figure}
+
+\textbf{Phân bố theo nhóm tuổi.}
+Để nhìn rõ hơn mức độ mất cân bằng dữ liệu, tuổi được gom thành các nhóm rời rạc. Hình~\ref{fig:age-group-distribution} cho thấy nhóm 21--30 tuổi chiếm ưu thế rất lớn với khoảng 7.7 nghìn ảnh, tiếp theo là nhóm 31--40 tuổi với khoảng 4.3 nghìn ảnh. Nhóm 0--5 tuổi cũng có số lượng tương đối lớn, trong khi nhóm 80+ chỉ chiếm một phần rất nhỏ của tập dữ liệu.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\linewidth,height=0.6\linewidth]{images/age_group_distribution.png}
+	\caption{Phân bố số lượng ảnh theo nhóm tuổi.}
+	\label{fig:age-group-distribution}
+\end{figure}
+
+\textbf{Phân bố giới tính.}
+Hình~\ref{fig:gender-distribution} cho thấy tập dữ liệu khá cân bằng về giới tính, với nam chiếm khoảng 52.3\% và nữ chiếm khoảng 47.7\%. 
+
+Tuy nhiên, đường mật độ trong Hình~\ref{fig:age-gender-density} chỉ ra rằng phân bố tuổi giữa hai giới không hoàn toàn giống nhau. Nhóm nữ tập trung mạnh hơn quanh vùng 20--35 tuổi, trong khi nhóm nam có độ trải rộng lớn hơn và kéo dài nhiều hơn về các độ tuổi cao. Điều này cho thấy nếu mô hình mắc lỗi khác nhau giữa nam và nữ, nguyên nhân không chỉ đến từ số lượng ảnh mà còn đến từ hình thái dữ liệu và cấu trúc độ tuổi đi kèm mỗi nhóm.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.7\linewidth]{images/gender_distribution.png}
+	\caption{Tỷ lệ giới tính trong toàn bộ tập dữ liệu.}
+	\label{fig:gender-distribution}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.92\linewidth]{images/age_gender_distribution.png}
+	\caption{Đường cong mật độ độ tuổi theo giới tính.}
+	\label{fig:age-gender-density}
+\end{figure}
+
+\subsection{Phân tích theo từng chủng tộc}
+Phân bố theo chủng tộc trong UTKFace cũng thể hiện sự mất cân bằng khá rõ. Hình~\ref{fig:race-distribution} cho thấy nhóm White chiếm tỷ lệ lớn nhất với khoảng 42.5\%, tiếp theo là Black (19.1\%), Indian (16.8\%), Asian (14.5\%) và Others (7.1\%). Khi nhìn theo giới tính ở Hình~\ref{fig:race-gender-distribution}, có thể thấy White vẫn là nhóm áp đảo ở cả nam lẫn nữ, trong khi các nhóm còn lại có số lượng nhỏ hơn nhiều.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.84\linewidth]{images/race_distribution.png}
+	\caption{Phân bố số lượng mẫu theo chủng tộc.}
+	\label{fig:race-distribution}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\linewidth]{images/race_gender_distribution.png}
+	\caption{Cấu trúc giới tính bên trong từng nhóm chủng tộc.}
+	\label{fig:race-gender-distribution}
+\end{figure}
+
+\textbf{Tương quan giữa tuổi và chủng tộc.}
+Biểu đồ violin ở Hình~\ref{fig:race-age-distribution} cho thấy độ tuổi của từng nhóm chủng tộc có sự phân tán khác nhau. Nhóm White có dải tuổi rộng nhất, bao phủ cả người trẻ, trung niên và cao tuổi. Các nhóm Asian và Others lại tập trung nhiều hơn ở các độ tuổi trẻ và trung niên, trong khi số mẫu ở độ tuổi rất cao tương đối ít. Điều này phản ánh không chỉ sự khác biệt về phân bố dữ liệu mà còn cho thấy một số vùng tuổi - chủng tộc có mật độ mẫu thấp hơn đáng kể so với phần còn lại của tập dữ liệu.
+
+% Từ góc nhìn mô hình hóa, đây là một dạng lệch giao cắt giữa tuổi và nhân khẩu học. Nghĩa là mô hình không chỉ phải học quan hệ tuổi - đặc trưng khuôn mặt, mà còn phải làm việc trong bối cảnh một số nhóm tuổi xuất hiện dày đặc ở vài chủng tộc nhất định. Trong thực nghiệm, đây là lý do nên theo dõi thêm sai số theo từng tổ hợp tuổi và chủng tộc thay vì chỉ báo cáo một con số tổng hợp.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\linewidth]{images/race_age_distribution.png}
+	\caption{Mật độ và phân tán độ tuổi trên từng nhóm chủng tộc.}
+	\label{fig:race-age-distribution}
+\end{figure}
+
+Từ các biểu đồ trên có thể rút ra các nhận xét chính. Thứ nhất, UTKFace là bộ dữ liệu đủ lớn và có nhãn phong phú, phù hợp cho bài toán hồi quy tuổi. Thứ hai, phân bố tuổi không đồng đều, đặc biệt tập trung mạnh ở nhóm 21--40 tuổi, nên mô hình dễ thiên lệch về vùng tuổi này. Thứ ba, dữ liệu tồn tại mất cân bằng theo chủng tộc và sự khác biệt về phân bố tuổi giữa các nhóm nhân khẩu học, vì vậy cần đánh giá mô hình theo nhiều góc nhìn khác nhau.
+
+\section{Thiết lập thực nghiệm}
+
+\subsection{Môi trường phần cứng}
+Các thí nghiệm được thực hiện trên máy tính cá nhân với cấu hình phần cứng như sau:
+\begin{itemize}
+	\item \textbf{CPU:} AMD Ryzen AI 7 350 (8 CPUs - 16 threads), ~2.0GHz
+	\item \textbf{RAM:} 32 GB
+\end{itemize}
+
+\subsection{Tiền xử lý dữ liệu}
+Dữ liệu từ UTKFace được xử lý theo hai bước chính: chia tập và tiền xử lý ảnh.
+
+\textbf{Chia tập dữ liệu.}
+Để đảm bảo tính cân bằng giữa các nhóm nhân khẩu học, tập dữ liệu được chia thành train (80\%) và test (20\%) bằng stratified splitting. Cụ thể, một khóa stratification được tạo bằng cách kết hợp chủng tộc (race) và nhóm tuổi (age\_group), đảm bảo mỗi tổ hợp race-age\_group xuất hiện ở cả tập train lẫn test với tỷ lệ tương đương. Trước khi chia, những nhóm có quá ít mẫu (ít hơn 2 ảnh) được loại bỏ để tránh lỗi stratification. Các chỉ số tập train và test được lưu để sử dụng lại trong các thí nghiệm.
+
+\textbf{Tiền xử lý ảnh.}
+Mỗi ảnh đầu vào trải qua pipeline tiền xử lý như sau:
+\begin{enumerate}
+	\item \textbf{Đọc ảnh:} Sử dụng OpenCV để đọc ảnh từ đường dẫn. Nếu đọc thất bại, trả về ảnh đen kích thước chuẩn hóa.
+	\item \textbf{Khử nhiễu:} Áp dụng Gaussian Blur với kernel $3 \times 3$ để giảm nhiễu và làm mượt ảnh.
+	\item \textbf{Chuẩn hóa kích thước:} Resize ảnh về kích thước chuẩn định ($128 \times 128$) bằng phương pháp INTER\_AREA.
+	\item \textbf{Chuyển đổi không gian màu:} Ảnh được chuyển từ BGR (mặc định OpenCV) sang Grayscale.
+\end{enumerate}
+
+Sau tiền xử lý, ảnh được đưa qua bước trích xuất đặc trưng trước khi đưa vào huấn luyện mô hình.
+
+\subsection{Trích xuất đặc trưng}
+Thay vì sử dụng trực tiếp toàn bộ giá trị pixel của ảnh làm đầu vào, các đặc trưng cục bộ được trích xuất nhằm nâng cao khả năng biểu diễn thông tin và độ mạnh mẽ của mô hình. Có 3 phương pháp trích xuất đặc trưng được cài đặt và so sánh:
+\begin{itemize}
+	\item \textbf{HOG (Histogram of Oriented Gradients):} Trích xuất đặc trưng định hướng gradient với số lượng hướng là 9. Cấu hình được đặt là $8 \times 8$ pixels cho mỗi cell và $2 \times 2$ cells cho mỗi block. Quá trình chuẩn hóa block sử dụng chuẩn \texttt{L2-Hys}.
+	\item \textbf{LBP (Local Binary Pattern):} Trích xuất đặc trưng kết cấu cục bộ bằng phương pháp LBP uniform, với bán kính lân cận $R=1$ và số điểm mẫu $P=8$. Vector đặc trưng cuối cùng là một biểu đồ tần suất (histogram) đã được chuẩn hóa L1 của các giá trị LBP trên toàn ảnh.
+	\item \textbf{SIFT (Scale-Invariant Feature Transform):} Sử dụng thuật toán SIFT để phát hiện và trích xuất các điểm đặc trưng cục bộ. Vector đặc trưng đại diện cho mỗi ảnh được tính bằng trung bình (mean) của toàn bộ các SIFT descriptors được tìm thấy trong ảnh đó.
+\end{itemize}
+
+\subsection{Cấu hình mô hình và Tham số huấn luyện}
+Dữ liệu đặc trưng thu được từ các phương pháp trên sẽ được dùng để huấn luyện độc lập trên 3 mô hình hồi quy học máy khác nhau:
+\begin{itemize}
+	\item \textbf{SVR (Support Vector Regression):} Sử dụng nhân (kernel) RBF, với tham số phạt $C=1.0$. Dữ liệu đầu vào được chuẩn hóa bằng \texttt{StandardScaler} trước khi đi vào mô hình SVR.
+	\item \textbf{Random Forest Regressor:} Mô hình học máy dạng tập hợp (ensemble) cấu tạo từ 100 cây quyết định (\texttt{n\_estimators}=100). Độ sâu tối đa của mỗi cây được giới hạn ở mức 10 (\texttt{max\_depth}=10). Mô hình chạy đa luồng (\texttt{n\_jobs}=-1) để tăng tốc xử lý.
+	\item \textbf{MLP (Multi-layer Perceptron):} Mạng nơ-ron truyền thẳng gồm 2 tầng ẩn với số lượng nơ-ron lần lượt là 256 và 128. Mô hình sử dụng hàm kích hoạt ReLU, thuật toán tối ưu hóa Adam, và hệ số chuẩn hóa regularization $\alpha=0.001$. Quá trình huấn luyện kéo dài tối đa 200 epochs. Tương tự SVR, dữ liệu đi vào MLP cũng được chuẩn hóa bằng \texttt{StandardScaler}.
+\end{itemize}
+
+\subsection{Tiêu chí đánh giá}
+Hiệu năng dự đoán tuổi của các mô hình được đo lường thông qua 2 độ đo chính:
+\begin{itemize}
+	\item \textbf{RMSE (Root Mean Square Error):} Căn bậc hai của sai lệch bình phương trung bình, phản ánh độ lệch chuẩn của phần dư. Việc bình phương sai số trước khi tính trung bình giúp RMSE phạt nặng hơn những dự đoán có sai số lớn. Công thức tính:
+	\begin{equation}
+	RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
+	\end{equation}
+	\item \textbf{MAE (Mean Absolute Error):} Độ sai lệch tuyệt đối trung bình giữa tuổi dự đoán và tuổi thực tế. MAE mang ý nghĩa trực quan cao, cho biết trung bình mô hình dự đoán sai lệch bao nhiêu tuổi so với nhãn gốc. Công thức tính:
+	\begin{equation}
+	MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
+	\end{equation}
+\end{itemize}
+Trong đó, $n$ là tổng số mẫu dữ liệu đánh giá, $y_i$ là tuổi thực tế (ground truth) và $\hat{y}_i$ là tuổi do mô hình dự đoán của mẫu thứ $i$.
+
+\section{Kết quả thực nghiệm}
+\subsection{So sánh hiệu năng các phương pháp trích xuất đặc trưng}
+Thực nghiệm được tiến hành bằng cách kết hợp chéo 3 loại đặc trưng (HOG, LBP, SIFT) với 3 mô hình học máy (SVR, Random Forest, MLP). Kết quả đánh giá hiệu năng trên tập kiểm thử (RMSE, MAE) và thời gian huấn luyện tương ứng được trình bày chi tiết trong Bảng~\ref{tab:feature-model-results}.
+
+\begin{table}[H]
+	\centering
+	\caption{Kết quả đánh giá các cấu hình đặc trưng và mô hình.}
+	\label{tab:feature-model-results}
+	\begin{tabular}{llccc}
+		\toprule
+		\textbf{Đặc trưng} & \textbf{Mô hình} & \textbf{RMSE} & \textbf{MAE} & \textbf{Thời gian (s)} \\
+		\midrule
+		\multirow{3}{*}{\textbf{HOG}} & RF  & 13.25 & 9.89 & 740.16 \\
+		& SVR & 12.65 & 9.15 & 910.99 \\
+		& \textbf{MLP} & \textbf{9.57} & \textbf{6.85} & 67.89 \\
+		\midrule
+		\multirow{3}{*}{\textbf{LBP}} & RF  & 16.37 & 12.43 & 1.02 \\
+		& SVR & 16.27 & 12.17 & 13.39 \\
+		& MLP & 15.94 & 12.14 & 32.92 \\
+		\midrule
+		\multirow{3}{*}{\textbf{SIFT}} & RF  & 17.89 & 13.68 & 12.12 \\
+		& SVR & 17.76 & 13.08 & 20.92 \\
+		& MLP & 22.31 & 17.19 & 30.10 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+	\centering
+	\includegraphics[width=1\linewidth]{images/result_compare_3_model_3_extraction.png}
+	\caption{Biểu đồ so sánh RMSE và MAE của 3 phương pháp trích xuất đặc trưng với 3 mô hình học máy.}
+	\label{fig:compare-models}
+\end{figure}
+
+Qua Bảng~\ref{tab:feature-model-results} và Hình~\ref{fig:compare-models}, ta có thể rút ra một số nhận xét quan trọng:
+\begin{itemize}
+	\item \textbf{Đặc trưng HOG vượt trội:} HOG cho kết quả tốt nhất ở tất cả các mô hình. Sự kết hợp giữa HOG và mạng nơ-ron đa tầng MLP đạt hiệu năng cao nhất trên toàn bộ thực nghiệm với MAE chỉ 6.85 tuổi. Điều này cho thấy định hướng gradient của HOG nắm bắt rất tốt hình thái nếp nhăn và đường nét cấu trúc khuôn mặt - những yếu tố cốt lõi để nhận diện độ tuổi.
+	\item \textbf{LBP và SIFT kém hiệu quả hơn:} LBP mô tả tốt kết cấu bề mặt cục bộ nhưng thiếu thông tin về hình dáng tổng thể, dẫn đến sai số tương đối cao (MAE $> 12$). SIFT thậm chí cho kết quả thấp nhất, đặc biệt khi kết hợp với MLP (MAE $= 17.19$). Việc tính trung bình (mean) tất cả các SIFT descriptors trong ảnh đã làm mất đi thông tin phân bố không gian quan trọng của khuôn mặt.
+	\item \textbf{Đánh giá thời gian huấn luyện:} Đặc trưng HOG sinh ra vector có số chiều lớn, làm tăng đáng kể thời gian huấn luyện đối với SVR (910s) và Random Forest (740s). Ngược lại, mạng MLP lại tối ưu hóa dữ liệu cao chiều rất tốt, chỉ tốn khoảng 68s nhưng lại mang về độ chính xác vượt trội.
+\end{itemize}
+
+Từ kết quả này, cấu hình \textbf{HOG + MLP} được lựa chọn làm mô hình tốt nhất để phân tích và đánh giá chuyên sâu hơn. Hình~\ref{fig:scatter-mlp-hog} thể hiện biểu đồ phân tán giữa tuổi thực tế và tuổi dự đoán của mô hình này. Phần lớn các điểm phân bố bám sát đường chéo trung tâm, chứng tỏ mô hình có khả năng hồi quy tuổi khá đồng đều.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1\linewidth]{images/scatter_MLP_HOG.png}
+	\caption{Biểu đồ phân tán (Scatter Plot) giữa tuổi thực tế và tuổi dự đoán của mô hình HOG + MLP.}
+	\label{fig:scatter-mlp-hog}
+\end{figure}
