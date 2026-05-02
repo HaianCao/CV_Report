@@ -66,6 +66,8 @@
 
 % ---------- Header & Footer ----------
 \usepackage{fancyhdr}
+% ensure header height to avoid layout warnings/overflow
+\setlength{\headheight}{14.5pt}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\leftmark}       % tiêu đề chương bên trái
@@ -78,6 +80,11 @@
 \titleformat{\chapter}[block]
   {\bfseries\centering\fontsize{18pt}{22pt}\selectfont}
   {Chương \thechapter.}{1em}{}
+
+% --- CHƯƠNG KHÔNG ĐÁNH SỐ ---
+\titleformat{name=\chapter,numberless}[block]
+  {\bfseries\fontsize{18pt}{22pt}\selectfont}
+  {}{0pt}{}
 
 \titlespacing*{\chapter}{0pt}{0pt}{1em}
 
