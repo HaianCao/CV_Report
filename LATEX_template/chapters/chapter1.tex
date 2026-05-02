@@ -1,5 +1,30 @@
 % !TeX root = ../Main.tex
 \chapter{Mở đầu}
 \section{Đặt vấn đề}
+Hồi quy tuổi từ khuôn mặt là một bài toán quan trọng trong thị giác máy tính vì nó hỗ trợ nhiều ứng dụng thực tế như quảng cáo theo độ tuổi, phân tích nhân khẩu học, kiểm soát truy cập và cá nhân hoá trải nghiệm người dùng. Nhiều hướng tiếp cận hiện đại cho thấy việc dự đoán tuổi từ ảnh khuôn mặt là khả thi, nhưng vẫn còn khó khăn lớn do sự thay đổi về biểu cảm, góc chụp, ánh sáng và khác biệt cá nhân trong quá trình lão hoá \cite{Rothe2015DEX,Zhang2017AgeProgression}.
+
+Việc xây dựng mô hình hồi quy tuổi chính xác đòi hỏi trích xuất đặc trưng khuôn mặt phù hợp và thiết kế mô hình có khả năng biểu diễn mối quan hệ phi tuyến giữa đặc trưng và tuổi thực. Ngoài ra, dữ liệu huấn luyện thường bị lệch theo phân bố tuổi hoặc chứa nhãn không hoàn toàn chính xác, khiến khả năng tổng quát hoá của mô hình bị ảnh hưởng đáng kể \cite{Levi2015AgeGender,Rothe2015DEX}.
 \section{Giới thiệu bài toán}
+Bài toán của project này là xây dựng và đánh giá phương pháp hồi quy tuổi dựa trên ảnh khuôn mặt. Mục tiêu là tạo ra một mô hình có thể dự đoán tuổi dưới dạng giá trị liên tục, thay vì chỉ phân lớp tuổi, để phản ánh sát hơn sự biến thiên thực tế giữa các cá nhân. Cụ thể, bài toán bao gồm:
+
+\begin{itemize}
+	\item Xây dựng pipeline trích xuất đặc trưng khuôn mặt (ví dụ: CNN pre-trained, biểu diễn mặt khuôn, các kỹ thuật tiền xử lý như cân bằng sáng, căn vùng khuôn mặt).
+	\item Thiết kế mô hình hồi quy (mạng nơ-ron tích chập, mô hình kết hợp hoặc phương pháp ensemble) để dự đoán tuổi dưới dạng giá trị thực.
+	\item Xử lý vấn đề dữ liệu: bình thường hoá nhãn tuổi, xử lý nhãn nhiễu, và cân bằng lớp tuổi khi cần.
+	\item Đánh giá hiệu năng trên các bộ dữ liệu chuẩn theo các chỉ số MSE/MAE và so sánh với các phương pháp tham chiếu.
+\end{itemize}
+
+Bài toán yêu cầu cân bằng giữa độ chính xác dự đoán và khả năng tổng quát hoá trên ảnh ngoài bộ huấn luyện, đồng thời cần xem xét các yếu tố đạo đức và riêng tư khi sử dụng ảnh khuôn mặt. Đây là lý do project này có ý nghĩa thực tiễn rõ ràng và cần được triển khai cẩn thận từ khâu dữ liệu đến đánh giá mô hình.
 \section{Mục tiêu}
+Mục tiêu tổng quát của project là phát triển một giải pháp hồi quy tuổi từ ảnh khuôn mặt có độ chính xác cao và khả năng tổng quát hoá tốt trên nhiều điều kiện chụp khác nhau.
+
+Mục tiêu cụ thể:
+\begin{itemize}
+	\item Thiết kế pipeline tiền xử lý và trích xuất đặc trưng khuôn mặt phù hợp cho nhiệm vụ hồi quy tuổi.
+	\item Triển khai và huấn luyện mô hình hồi quy (ví dụ: CNN với đầu ra liên tục) và tối ưu hàm mất mát phù hợp cho bài toán hồi quy.
+	\item Xử lý vấn đề dữ liệu như cân bằng phân phối tuổi, lọc nhãn sai và tăng cường dữ liệu.
+	\item Đánh giá mô hình bằng các chỉ số như MAE (Mean Absolute Error) và RMSE trên các bộ dữ liệu chuẩn, so sánh với các phương pháp liên quan đã công bố \cite{Rothe2015DEX,Levi2015AgeGender,Niu2016OrdinalRegressionAge}.
+	\item Thảo luận các yếu tố đạo đức, riêng tư và hạn chế của phương pháp.
+\end{itemize}
+
+Phần còn lại của chương sẽ trình bày các khái niệm cơ bản về học sâu cho hồi quy, các bộ dữ liệu chuẩn cho bài toán tuổi và tổng quan các công trình liên quan.
