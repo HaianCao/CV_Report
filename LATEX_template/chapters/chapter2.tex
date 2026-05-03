@@ -3,27 +3,29 @@
 
 Chương này trình bày các kiến thức nền tảng cần thiết cho bài toán ước lượng tuổi từ ảnh khuôn mặt. Nội dung tập trung vào các phương pháp trích xuất đặc trưng, giảm chiều dữ liệu và các mô hình hồi quy thường được sử dụng để dự đoán tuổi từ đặc trưng ảnh.
 
-% pipeline trích rút -> {giảm chiều} -> học máy
+% pipeline tiền xử lý -> trích rút -> {giảm chiều} -> học máy
 \begin{figure}[htbp]
 \centering
 % ensure box does not exceed line width and is centered inside the float
 \resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[node distance=2.3cm, every node/.style={align=center, inner sep=3pt, outer sep=0pt, font=\footnotesize}]
+\begin{tikzpicture}[node distance=2.5cm, every node/.style={align=center, inner sep=3pt, outer sep=0pt, font=\footnotesize}]
 	% define compact colored block style
 	\tikzset{block/.style={draw, rounded corners, minimum width=2.0cm, minimum height=0.85cm, align=center, outer sep=0pt}}
 
 	\node[block, fill=blue!12] (image) {Ảnh\\khuôn mặt};
-	\node[block, fill=teal!8, right of=image] (extract) {Trích rút\\đặc trưng};
-	\node[block, fill=orange!12, right of=extract] (reduce) {Giảm chiều\\dữ liệu};
+	\node[block, fill=cyan!10, right of=image] (preprocess) {Tiền xử lý\\dữ liệu};
+	\node[block, fill=teal!8, right of=preprocess] (extract) {Trích rút\\đặc trưng};
+	\node[block, fill=orange!12, right of=extract] (reduce) {Giảm chiều\\dữ liệu\\(Tùy chọn)};
 	\node[block, fill=red!10, right of=reduce] (regress) {Hồi quy\\tuổi};
 
 	% colored arrows
-	\draw[->, thick, >=stealth, draw=blue!60] (image) -- (extract);
+	\draw[->, thick, >=stealth, draw=blue!60] (image) -- (preprocess);
+	\draw[->, thick, >=stealth, draw=cyan!60] (preprocess) -- (extract);
 	\draw[->, thick, >=stealth, draw=teal!60] (extract) -- (reduce);
 	\draw[->, thick, >=stealth, draw=orange!60] (reduce) -- (regress);
 \end{tikzpicture}%
 }
-\caption{Sơ đồ pipeline xử lý: ảnh khuôn mặt → trích rút đặc trưng → giảm chiều dữ liệu → hồi quy tuổi.}
+\caption{Sơ đồ pipeline xử lý: ảnh khuôn mặt → tiền xử lý → trích rút đặc trưng → giảm chiều dữ liệu (tùy chọn) → hồi quy tuổi.}
 \label{fig:pipeline}
 \end{figure}
 
