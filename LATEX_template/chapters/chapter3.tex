@@ -1,7 +1,7 @@
 % !TeX root = ../Main.tex
 \chapter{Thực nghiệm và Kết quả}
 
-Chương này trình bày chi tiết về toàn bộ quá trình thực nghiệm nhằm đánh giá hiệu năng của các phương pháp đề xuất. Nội dung chương bao gồm phân tích đặc điểm bộ dữ liệu UTKFace, mô tả quy trình thiết lập môi trường và cấu hình tham số cho các mô hình học máy. Cuối cùng, các kết quả dự đoán tuổi thực tế sẽ được tổng hợp, trực quan hóa và so sánh dựa trên các độ đo sai số chuẩn (RMSE, MAE) để từ đó lựa chọn ra mô hình tối ưu nhất cho bài toán.
+Chương này trình bày chi tiết về toàn bộ quá trình thực nghiệm nhằm đánh giá hiệu năng của các phương pháp đề xuất. Nội dung chương bao gồm phân tích đặc điểm bộ dữ liệu UTKFace, mô tả quy trình thiết lập môi trường và cấu hình tham số cho các mô hình học máy. Cuối cùng, các kết quả dự đoán tuổi thực tế sẽ được tổng hợp, trực quan hóa và so sánh dựa trên các độ đo sai số chuẩn ($RMSE$, $MAE$, $R^2$) để từ đó lựa chọn ra mô hình tối ưu nhất cho bài toán.
 
 \section{Bộ dữ liệu}
 Trong tiểu luận này, tập dữ liệu sử dụng cho bài toán hồi quy tuổi là UTKFace~\cite{zhang2017cvpr,UTKFaceKaggle}, một bộ ảnh khuôn mặt công khai được lấy từ Kaggle. Tập dữ liệu này chứa tổng cộng 23.705 ảnh, mỗi ảnh đi kèm nhãn được mã hóa trực tiếp trong tên tệp theo mẫu:
@@ -109,113 +109,288 @@ Biểu đồ violin ở Hình~\ref{fig:race-age-distribution} cho thấy độ t
 
 Từ các biểu đồ trên có thể rút ra các nhận xét chính. Thứ nhất, UTKFace là bộ dữ liệu đủ lớn và có nhãn phong phú, phù hợp cho bài toán hồi quy tuổi. Thứ hai, phân bố tuổi không đồng đều, đặc biệt tập trung mạnh ở nhóm 21--40 tuổi, nên mô hình dễ thiên lệch về vùng tuổi này. Thứ ba, dữ liệu tồn tại mất cân bằng theo chủng tộc và sự khác biệt về phân bố tuổi giữa các nhóm nhân khẩu học, vì vậy cần đánh giá mô hình theo nhiều góc nhìn khác nhau.
 
+% \section{Thiết lập thực nghiệm}
+
+% Phần này trình bày chi tiết về quy trình và các điều kiện được thiết lập để tiến hành huấn luyện và đánh giá mô hình. Các nội dung chính bao gồm: cấu hình môi trường phần cứng máy tính, các bước tiền xử lý và chia tách tập dữ liệu, phương pháp trích xuất đặc trưng hình ảnh (HOG, LBP, SIFT), thiết lập tham số cho các mô hình học máy (SVR, Random Forest, MLP) và cuối cùng là các tiêu chí đánh giá hiệu năng (RMSE, MAE).
+
+% \subsection{Môi trường phần cứng}
+% Các thí nghiệm được thực hiện trên máy tính cá nhân với cấu hình phần cứng như sau:
+% \begin{itemize}
+% 	\item \textbf{CPU:} AMD Ryzen AI 7 350 (8 CPUs - 16 threads), ~2.0GHz
+% 	\item \textbf{RAM:} 32 GB
+% \end{itemize}
+
+% \subsection{Tiền xử lý dữ liệu}
+% Dữ liệu từ UTKFace được xử lý theo hai bước chính: chia tập và tiền xử lý ảnh.
+
+% \textbf{Chia tập dữ liệu.}
+% Để đảm bảo tính cân bằng giữa các nhóm nhân khẩu học, tập dữ liệu được chia thành train (80\%) và test (20\%) bằng stratified splitting. Cụ thể, một khóa stratification được tạo bằng cách kết hợp chủng tộc (race) và nhóm tuổi (age\_group), đảm bảo mỗi tổ hợp race-age\_group xuất hiện ở cả tập train lẫn test với tỷ lệ tương đương. Trước khi chia, những nhóm có quá ít mẫu (ít hơn 2 ảnh) được loại bỏ để tránh lỗi stratification. Các chỉ số tập train và test được lưu để sử dụng lại trong các thí nghiệm.
+
+% \textbf{Tiền xử lý ảnh.}
+% Mỗi ảnh đầu vào trải qua quy trình tiền xử lý như sau:
+% \begin{enumerate}
+% 	\item \textbf{Đọc ảnh:} Sử dụng OpenCV để đọc ảnh từ đường dẫn. Nếu đọc thất bại, trả về ảnh đen kích thước chuẩn hóa.
+% 	\item \textbf{Khử nhiễu:} Áp dụng Gaussian Blur với kernel $3 \times 3$ để giảm nhiễu và làm mượt ảnh.
+% 	\item \textbf{Chuẩn hóa kích thước:} Resize ảnh về kích thước chuẩn định ($128 \times 128$) bằng phương pháp INTER\_AREA.
+% 	\item \textbf{Chuyển đổi không gian màu:} Ảnh được chuyển từ BGR (mặc định OpenCV) sang Grayscale.
+% \end{enumerate}
+
+% Sau tiền xử lý, ảnh được đưa qua bước trích xuất đặc trưng trước khi đưa vào huấn luyện mô hình.
+
+% \subsection{Trích xuất đặc trưng}
+% Thay vì sử dụng trực tiếp toàn bộ giá trị pixel của ảnh làm đầu vào, các đặc trưng cục bộ được trích xuất nhằm nâng cao khả năng biểu diễn thông tin và độ mạnh mẽ của mô hình. Có 3 phương pháp trích xuất đặc trưng được cài đặt và so sánh:
+% \begin{itemize}
+% 	\item \textbf{HOG (Histogram of Oriented Gradients):} Trích xuất đặc trưng định hướng gradient với số lượng hướng là 9. Cấu hình được đặt là $8 \times 8$ pixels cho mỗi cell và $2 \times 2$ cells cho mỗi block. Quá trình chuẩn hóa block sử dụng chuẩn \texttt{L2-Hys}.
+% 	\item \textbf{LBP (Local Binary Pattern):} Trích xuất đặc trưng kết cấu cục bộ bằng phương pháp LBP uniform, với bán kính lân cận $R=1$ và số điểm mẫu $P=8$. Vector đặc trưng cuối cùng là một biểu đồ tần suất (histogram) đã được chuẩn hóa L1 của các giá trị LBP trên toàn ảnh.
+% 	\item \textbf{SIFT (Scale-Invariant Feature Transform):} Sử dụng thuật toán SIFT để phát hiện và trích xuất các điểm đặc trưng cục bộ. Vector đặc trưng đại diện cho mỗi ảnh được tính bằng trung bình (mean) của toàn bộ các SIFT descriptors được tìm thấy trong ảnh đó.
+% \end{itemize}
+
+% \subsection{Cấu hình mô hình và Tham số huấn luyện}
+% Dữ liệu đặc trưng thu được từ các phương pháp trên sẽ được dùng để huấn luyện độc lập trên 3 mô hình hồi quy học máy khác nhau:
+% \begin{itemize}
+% 	\item \textbf{SVR (Support Vector Regression):} Sử dụng nhân (kernel) RBF, với tham số phạt $C=1.0$. Dữ liệu đầu vào được chuẩn hóa bằng \texttt{StandardScaler} trước khi đi vào mô hình SVR.
+% 	\item \textbf{Random Forest Regressor:} Mô hình học máy dạng tập hợp (ensemble) cấu tạo từ 100 cây quyết định (\texttt{n\_estimators}=100). Độ sâu tối đa của mỗi cây được giới hạn ở mức 10 (\texttt{max\_depth}=10). Mô hình chạy đa luồng (\texttt{n\_jobs}=-1) để tăng tốc xử lý.
+% 	\item \textbf{MLP (Multi-layer Perceptron):} Mạng nơ-ron truyền thẳng gồm 2 tầng ẩn với số lượng nơ-ron lần lượt là 256 và 128. Mô hình sử dụng hàm kích hoạt ReLU, thuật toán tối ưu hóa Adam, và hệ số chuẩn hóa regularization $\alpha=0.001$. Quá trình huấn luyện kéo dài tối đa 200 epochs. Tương tự SVR, dữ liệu đi vào MLP cũng được chuẩn hóa bằng \texttt{StandardScaler}.
+% \end{itemize}
+
+% \subsection{Tiêu chí đánh giá}
+% Hiệu năng dự đoán tuổi của các mô hình được đo lường thông qua 2 độ đo chính:
+% \begin{itemize}
+% 	\item \textbf{RMSE (Root Mean Square Error):} Căn bậc hai của sai lệch bình phương trung bình, phản ánh độ lệch chuẩn của phần dư. Việc bình phương sai số trước khi tính trung bình giúp RMSE phạt nặng hơn những dự đoán có sai số lớn. Công thức tính:
+% 	\[
+% 	RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
+% 	\]
+% 	\item \textbf{MAE (Mean Absolute Error):} Độ sai lệch tuyệt đối trung bình giữa tuổi dự đoán và tuổi thực tế. MAE mang ý nghĩa trực quan cao, cho biết trung bình mô hình dự đoán sai lệch bao nhiêu tuổi so với nhãn gốc. Công thức tính:
+% 	\[
+% 	MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
+% 	\]
+% \end{itemize}
+% Trong đó, $n$ là tổng số mẫu dữ liệu đánh giá, $y_i$ là tuổi thực tế (ground truth) và $\hat{y}_i$ là tuổi do mô hình dự đoán của mẫu thứ $i$.
+
 \section{Thiết lập thực nghiệm}
 
-Phần này trình bày chi tiết về quy trình và các điều kiện được thiết lập để tiến hành huấn luyện và đánh giá mô hình. Các nội dung chính bao gồm: cấu hình môi trường phần cứng máy tính, các bước tiền xử lý và chia tách tập dữ liệu, phương pháp trích xuất đặc trưng hình ảnh (HOG, LBP, SIFT), thiết lập tham số cho các mô hình học máy (SVR, Random Forest, MLP) và cuối cùng là các tiêu chí đánh giá hiệu năng (RMSE, MAE).
+Phần này trình bày quy trình và cấu hình tham số thực nghiệm để huấn luyện và đánh giá hệ thống, bao gồm: quy trình phân chia dữ liệu, ba chiến lược tiền xử lý ảnh, phương pháp trích xuất đặc trưng kết hợp túi từ vựng thị giác (BoVW), cấu hình cho các mô hình học máy truyền thống và mạng nơ-ron tích chập (CNN).
 
 \subsection{Môi trường phần cứng}
-Các thí nghiệm được thực hiện trên máy tính cá nhân với cấu hình phần cứng như sau:
-\begin{itemize}
-	\item \textbf{CPU:} AMD Ryzen AI 7 350 (8 CPUs - 16 threads), ~2.0GHz
-	\item \textbf{RAM:} 32 GB
-\end{itemize}
+Các thí nghiệm được triển khai trên nền tảng điện toán đám mây Google Colaboratory (Colab), sử dụng máy chủ ảo với bộ nhớ RAM dung lượng cao (High RAM) và được tăng tốc tính toán bởi bộ xử lý đồ họa GPU NVIDIA T4 Tensor Core.
 
-\subsection{Tiền xử lý dữ liệu}
-Dữ liệu từ UTKFace được xử lý theo hai bước chính: chia tập và tiền xử lý ảnh.
+\subsection{Phân chia tập dữ liệu và các chiến lược tiền xử lý ảnh}
+\textbf{Phân chia tập dữ liệu:} 
+Để kiểm soát sự mất cân bằng nhân khẩu học, tập dữ liệu UTKFace được chia thành tập huấn luyện (80\%) và tập kiểm thử (20\%) bằng phương pháp phân tầng (Stratified Splitting). Khóa phân tầng là sự kết hợp giữa thuộc tính chủng tộc và nhóm tuổi. Các nhóm có ít hơn 2 mẫu được loại bỏ để đảm bảo tính hợp lệ khi phân tầng. Chỉ số của hai tập được cố định để áp dụng đồng nhất cho mọi mô hình đối chiếu.
 
-\textbf{Chia tập dữ liệu.}
-Để đảm bảo tính cân bằng giữa các nhóm nhân khẩu học, tập dữ liệu được chia thành train (80\%) và test (20\%) bằng stratified splitting. Cụ thể, một khóa stratification được tạo bằng cách kết hợp chủng tộc (race) và nhóm tuổi (age\_group), đảm bảo mỗi tổ hợp race-age\_group xuất hiện ở cả tập train lẫn test với tỷ lệ tương đương. Trước khi chia, những nhóm có quá ít mẫu (ít hơn 2 ảnh) được loại bỏ để tránh lỗi stratification. Các chỉ số tập train và test được lưu để sử dụng lại trong các thí nghiệm.
-
-\textbf{Tiền xử lý ảnh.}
-Mỗi ảnh đầu vào trải qua quy trình tiền xử lý như sau:
+\textbf{Các chiến lược tiền xử lý ảnh:}
+Hệ thống thiết lập ba chiến lược tiền xử lý độc lập để đánh giá mức độ ảnh hưởng của nhiễu nền:
 \begin{enumerate}
-	\item \textbf{Đọc ảnh:} Sử dụng OpenCV để đọc ảnh từ đường dẫn. Nếu đọc thất bại, trả về ảnh đen kích thước chuẩn hóa.
-	\item \textbf{Khử nhiễu:} Áp dụng Gaussian Blur với kernel $3 \times 3$ để giảm nhiễu và làm mượt ảnh.
-	\item \textbf{Chuẩn hóa kích thước:} Resize ảnh về kích thước chuẩn định ($128 \times 128$) bằng phương pháp INTER\_AREA.
-	\item \textbf{Chuyển đổi không gian màu:} Ảnh được chuyển từ BGR (mặc định OpenCV) sang Grayscale.
+    \item \textbf{Original (Ảnh gốc):} Ảnh được nội suy về độ phân giải chuẩn $128 \times 128$ pixel.
+    \item \textbf{Seg\_YCrCb (Phân vùng YCrCb):} Ảnh $128 \times 128$ được chuyển sang không gian màu YCrCb. Mặt nạ da được trích xuất qua bộ lọc ngưỡng (chặn dưới $[0, 133, 77]$, chặn trên $[255, 173, 127]$). Mặt nạ nhị phân sau đó qua xử lý hình thái học (phép mở và phép đóng, 2 lần lặp với nhân elip $5 \times 5$) để khử nhiễu trước khi nhân logic (bitwise AND) với ảnh gốc.
+    \item \textbf{Seg\_HSV (Phân vùng HSV):} Tương tự quy trình trên nhưng sử dụng không gian màu HSV với dải ngưỡng từ $[0, 20, 70]$ đến $[20, 255, 255]$.
 \end{enumerate}
+Riêng đối với nhánh sử dụng đặc trưng thủ công, ảnh sau khi đi qua chiến lược tiền xử lý sẽ được khử nhiễu bằng bộ lọc Gaussian $3 \times 3$ và chuyển đổi về dạng ảnh xám (Grayscale).
 
-Sau tiền xử lý, ảnh được đưa qua bước trích xuất đặc trưng trước khi đưa vào huấn luyện mô hình.
-
-\subsection{Trích xuất đặc trưng}
-Thay vì sử dụng trực tiếp toàn bộ giá trị pixel của ảnh làm đầu vào, các đặc trưng cục bộ được trích xuất nhằm nâng cao khả năng biểu diễn thông tin và độ mạnh mẽ của mô hình. Có 3 phương pháp trích xuất đặc trưng được cài đặt và so sánh:
+\subsection{Trích xuất và xử lý đặc trưng hình ảnh}
 \begin{itemize}
-	\item \textbf{HOG (Histogram of Oriented Gradients):} Trích xuất đặc trưng định hướng gradient với số lượng hướng là 9. Cấu hình được đặt là $8 \times 8$ pixels cho mỗi cell và $2 \times 2$ cells cho mỗi block. Quá trình chuẩn hóa block sử dụng chuẩn \texttt{L2-Hys}.
-	\item \textbf{LBP (Local Binary Pattern):} Trích xuất đặc trưng kết cấu cục bộ bằng phương pháp LBP uniform, với bán kính lân cận $R=1$ và số điểm mẫu $P=8$. Vector đặc trưng cuối cùng là một biểu đồ tần suất (histogram) đã được chuẩn hóa L1 của các giá trị LBP trên toàn ảnh.
-	\item \textbf{SIFT (Scale-Invariant Feature Transform):} Sử dụng thuật toán SIFT để phát hiện và trích xuất các điểm đặc trưng cục bộ. Vector đặc trưng đại diện cho mỗi ảnh được tính bằng trung bình (mean) của toàn bộ các SIFT descriptors được tìm thấy trong ảnh đó.
+    \item \textbf{HOG:} Bộ mô tả sử dụng cấu hình: cửa sổ $128 \times 128$, block $16 \times 16$, block stride $8 \times 8$, cell $8 \times 8$ và 9 bin định hướng. Các vector cục bộ được chuẩn hóa theo chuẩn L2-Hys và làm phẳng (flatten) thành vector đặc trưng 1D (kiểu float32).
+    \item \textbf{LBP:} Sử dụng toán tử LBP uniform với bán kính lân cận $R=1$ và số điểm mẫu $P=8$. Đặc trưng toàn cục là một histogram chuẩn hóa L1 gồm 10 bin.
+    \item \textbf{SIFT và BoVW:} Thay vì sử dụng trực tiếp các descriptor 128 chiều biến thiên về số lượng, SIFT được kết hợp với phương pháp Bag of Visual Words. Một mô hình Gaussian Mixture Model (GMM) với $K=256$ thành phần được huấn luyện trên tập train để tạo từ điển thị giác. Thuật toán EM hội tụ tối đa 20 vòng lặp với tâm cụm khởi tạo bằng K-Means. Các điểm SIFT trên mỗi ảnh được lượng hóa mềm (soft quantization) dựa trên xác suất hậu nghiệm, tạo ra một histogram 256 chiều.
+    \item \textbf{Giảm chiều dữ liệu PCA:} Kỹ thuật PCA được áp dụng để giảm số chiều của đặc trưng HOG. Qua thực nghiệm Grid Search từ 10 đến 400 thành phần chính, cấu hình PCA 40 chiều được lựa chọn cố định cho các mô hình SVR và Random Forest trong pha suy luận (inference) nhằm tối ưu thời gian chạy mà vẫn duy trì được hiệu năng $R^2$.
 \end{itemize}
 
-\subsection{Cấu hình mô hình và Tham số huấn luyện}
-Dữ liệu đặc trưng thu được từ các phương pháp trên sẽ được dùng để huấn luyện độc lập trên 3 mô hình hồi quy học máy khác nhau:
+\subsection{Cấu hình mô hình và tham số huấn luyện}
+\textbf{Các mô hình học máy truyền thống:}
+Dữ liệu đặc trưng đi qua bộ chuẩn hóa StandardScaler trước khi đưa vào huấn luyện các mô hình:
 \begin{itemize}
-	\item \textbf{SVR (Support Vector Regression):} Sử dụng nhân (kernel) RBF, với tham số phạt $C=1.0$. Dữ liệu đầu vào được chuẩn hóa bằng \texttt{StandardScaler} trước khi đi vào mô hình SVR.
-	\item \textbf{Random Forest Regressor:} Mô hình học máy dạng tập hợp (ensemble) cấu tạo từ 100 cây quyết định (\texttt{n\_estimators}=100). Độ sâu tối đa của mỗi cây được giới hạn ở mức 10 (\texttt{max\_depth}=10). Mô hình chạy đa luồng (\texttt{n\_jobs}=-1) để tăng tốc xử lý.
-	\item \textbf{MLP (Multi-layer Perceptron):} Mạng nơ-ron truyền thẳng gồm 2 tầng ẩn với số lượng nơ-ron lần lượt là 256 và 128. Mô hình sử dụng hàm kích hoạt ReLU, thuật toán tối ưu hóa Adam, và hệ số chuẩn hóa regularization $\alpha=0.001$. Quá trình huấn luyện kéo dài tối đa 200 epochs. Tương tự SVR, dữ liệu đi vào MLP cũng được chuẩn hóa bằng \texttt{StandardScaler}.
+    \item \textbf{SVR:} Sử dụng hàm nhân RBF (Radial Basis Function) với tham số điều chuẩn $C=1.0$. 
+    \item \textbf{Random Forest:} Tập hợp gồm 100 cây quyết định, giới hạn độ sâu tối đa của mỗi nhánh (max\_depth) là 10.
+    \item \textbf{MLP:} Mạng nơ-ron truyền thẳng gồm 2 lớp ẩn (256 và 128 nơ-ron). Sử dụng hàm kích hoạt ReLU, thuật toán tối ưu Adam với hệ số chuẩn hóa L2 $\alpha=0.001$. Mô hình huấn luyện tối đa 200 epochs.
 \end{itemize}
 
-\subsection{Tiêu chí đánh giá}
-Hiệu năng dự đoán tuổi của các mô hình được đo lường thông qua 2 độ đo chính:
+\textbf{Mạng nơ-ron tích chập (CNN):}
+Mạng học sâu được xây dựng tùy chỉnh bằng Keras để học trực tiếp từ ảnh kích thước $128 \times 128 \times C$. Dữ liệu đầu vào được chuẩn hóa về dải $[0, 1]$. Cấu trúc mạng bao gồm:
 \begin{itemize}
-	\item \textbf{RMSE (Root Mean Square Error):} Căn bậc hai của sai lệch bình phương trung bình, phản ánh độ lệch chuẩn của phần dư. Việc bình phương sai số trước khi tính trung bình giúp RMSE phạt nặng hơn những dự đoán có sai số lớn. Công thức tính:
-	\[
-	RMSE = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
-	\]
-	\item \textbf{MAE (Mean Absolute Error):} Độ sai lệch tuyệt đối trung bình giữa tuổi dự đoán và tuổi thực tế. MAE mang ý nghĩa trực quan cao, cho biết trung bình mô hình dự đoán sai lệch bao nhiêu tuổi so với nhãn gốc. Công thức tính:
-	\[
-	MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
-	\]
+    \item \textbf{Block 1:} Hai lớp Conv2D (32 bộ lọc $3 \times 3$, padding 'same', ReLU), mỗi lớp nối tiếp bởi Batch Normalization (BN). Kết thúc block là lớp Max Pooling $2 \times 2$ và Dropout (0.25).
+    \item \textbf{Block 2 \& 3:} Cấu trúc tương tự Block 1, tăng số lượng bộ lọc lần lượt lên 64 và 128, tỷ lệ Dropout tăng tương ứng lên 0.30 và 0.35.
+    \item \textbf{Block 4:} Hai lớp Conv2D (256 bộ lọc $3 \times 3$), kèm BN và Dropout (0.40). Không sử dụng Max Pooling ở tầng này.
+    \item \textbf{Global Average Pooling (GAP):} Nén toàn bộ bản đồ đặc trưng về vector 256 chiều, thay thế cho lớp Flatten truyền thống nhằm kiểm soát lượng tham số.
+    \item \textbf{Tầng phân loại hồi quy (Dense Head):} Gồm một lớp Dense 256 (BN, Dropout 0.50), một lớp Dense 128 (BN, Dropout 0.40) và lớp đầu ra (1 nút) không dùng hàm kích hoạt để dự đoán tuổi.
 \end{itemize}
-Trong đó, $n$ là tổng số mẫu dữ liệu đánh giá, $y_i$ là tuổi thực tế (ground truth) và $\hat{y}_i$ là tuổi do mô hình dự đoán của mẫu thứ $i$.
+Mạng CNN được biên dịch bằng bộ tối ưu hóa Adam (tốc độ học $0.001$), hàm mất mát là $MAE$. Mô hình được huấn luyện trong 15 epochs với kích thước lô (batch size) là 64. 
+
+% \section{Kết quả thực nghiệm}
+% \subsection{So sánh hiệu năng các phương pháp trích xuất đặc trưng}
+% Thực nghiệm được tiến hành bằng cách kết hợp chéo 3 loại đặc trưng (HOG, LBP, SIFT) với 3 mô hình học máy (SVR, Random Forest, MLP). Kết quả đánh giá hiệu năng trên tập kiểm thử (RMSE, MAE) và thời gian huấn luyện tương ứng được trình bày chi tiết trong Bảng~\ref{tab:feature-model-results}.
+
+% \begin{table}[H]
+% 	\centering
+% 	\caption{Kết quả đánh giá các cấu hình đặc trưng và mô hình.}
+% 	\label{tab:feature-model-results}
+% 	\begin{tabular}{llccc}
+% 		\toprule
+% 		\textbf{Đặc trưng} & \textbf{Mô hình} & \textbf{RMSE} & \textbf{MAE} & \textbf{Thời gian (s)} \\
+% 		\midrule
+% 		\multirow{3}{*}{\textbf{HOG}} & RF  & 13.25 & 9.89 & 740.16 \\
+% 		& SVR & 12.65 & 9.15 & 910.99 \\
+% 		& \textbf{MLP} & \textbf{9.57} & \textbf{6.85} & 67.89 \\
+% 		\midrule
+% 		\multirow{3}{*}{\textbf{LBP}} & RF  & 16.37 & 12.43 & 1.02 \\
+% 		& SVR & 16.27 & 12.17 & 13.39 \\
+% 		& MLP & 15.94 & 12.14 & 32.92 \\
+% 		\midrule
+% 		\multirow{3}{*}{\textbf{SIFT}} & RF  & 17.89 & 13.68 & 12.12 \\
+% 		& SVR & 17.76 & 13.08 & 20.92 \\
+% 		& MLP & 22.31 & 17.19 & 30.10 \\
+% 		\bottomrule
+% 	\end{tabular}
+% \end{table}
+
+% \begin{figure}[!htbp]
+% 	\centering
+% 	\includegraphics[width=1\linewidth]{images/result_compare_3_model_3_extraction.png}
+% 	\caption{Biểu đồ so sánh RMSE và MAE của 3 phương pháp trích xuất đặc trưng với 3 mô hình học máy.}
+% 	\label{fig:compare-models}
+% \end{figure}
+
+% Qua Bảng~\ref{tab:feature-model-results} và Hình~\ref{fig:compare-models}, ta có thể rút ra một số nhận xét quan trọng:
+% \begin{itemize}
+% 	\item \textbf{Đặc trưng HOG vượt trội:} HOG cho kết quả tốt nhất ở tất cả các mô hình. Sự kết hợp giữa HOG và mạng nơ-ron đa tầng MLP đạt hiệu năng cao nhất trên toàn bộ thực nghiệm với MAE chỉ 6.85 tuổi. Điều này cho thấy định hướng gradient của HOG nắm bắt rất tốt hình thái nếp nhăn và đường nét cấu trúc khuôn mặt - những yếu tố cốt lõi để nhận diện độ tuổi.
+% 	\item \textbf{LBP và SIFT kém hiệu quả hơn:} LBP mô tả tốt kết cấu bề mặt cục bộ nhưng thiếu thông tin về hình dáng tổng thể, dẫn đến sai số tương đối cao (MAE $> 12$). SIFT thậm chí cho kết quả thấp nhất, đặc biệt khi kết hợp với MLP (MAE $= 17.19$). Việc tính trung bình (mean) tất cả các SIFT descriptors trong ảnh đã làm mất đi thông tin phân bố không gian quan trọng của khuôn mặt.
+% 	\item \textbf{Đánh giá thời gian huấn luyện:} Đặc trưng HOG sinh ra vector có số chiều lớn, làm tăng đáng kể thời gian huấn luyện đối với SVR (910s) và Random Forest (740s). Ngược lại, mạng MLP lại tối ưu hóa dữ liệu nhiều chiều rất tốt, chỉ tốn khoảng 68s nhưng lại mang về độ chính xác vượt trội.
+% \end{itemize}
+
+% Từ kết quả này, cấu hình \textbf{HOG + MLP} được lựa chọn làm mô hình tốt nhất để phân tích và đánh giá chuyên sâu hơn. Hình~\ref{fig:scatter-mlp-hog} thể hiện biểu đồ phân tán giữa tuổi thực tế và tuổi dự đoán của mô hình này. Phần lớn các điểm phân bố bám sát đường chéo trung tâm, chứng tỏ mô hình có khả năng hồi quy tuổi khá đồng đều.
+
+% \begin{figure}[H]
+% 	\centering
+% 	\includegraphics[width=1\linewidth]{images/scatter_MLP_HOG.png}
+% 	\caption{Biểu đồ phân tán (Scatter Plot) giữa tuổi thực tế và tuổi dự đoán của mô hình HOG + MLP.}
+% 	\label{fig:scatter-mlp-hog}
+% \end{figure}
+
+% \section{Tổng kết chương}
+% Chương này đã trình bày chi tiết quá trình thực nghiệm, từ việc phân tích đặc điểm phân bố của tập dữ liệu UTKFace đến thiết lập môi trường và cấu hình thông số huấn luyện. Các kết quả đánh giá cho thấy mô hình mạng nơ-ron đa tầng (MLP) kết hợp với đặc trưng định hướng gradient (HOG) đạt hiệu năng vượt trội so với các phương pháp khác. Đây sẽ là cấu hình tốt nhất được sử dụng để tiến hành phân tích lỗi chuyên sâu đối với các nhóm yếu tố nhân khẩu học trong chương tiếp theo.
 
 \section{Kết quả thực nghiệm}
-\subsection{So sánh hiệu năng các phương pháp trích xuất đặc trưng}
-Thực nghiệm được tiến hành bằng cách kết hợp chéo 3 loại đặc trưng (HOG, LBP, SIFT) với 3 mô hình học máy (SVR, Random Forest, MLP). Kết quả đánh giá hiệu năng trên tập kiểm thử (RMSE, MAE) và thời gian huấn luyện tương ứng được trình bày chi tiết trong Bảng~\ref{tab:feature-model-results}.
 
-\begin{table}[H]
-	\centering
-	\caption{Kết quả đánh giá các cấu hình đặc trưng và mô hình.}
-	\label{tab:feature-model-results}
-	\begin{tabular}{llccc}
-		\toprule
-		\textbf{Đặc trưng} & \textbf{Mô hình} & \textbf{RMSE} & \textbf{MAE} & \textbf{Thời gian (s)} \\
-		\midrule
-		\multirow{3}{*}{\textbf{HOG}} & RF  & 13.25 & 9.89 & 740.16 \\
-		& SVR & 12.65 & 9.15 & 910.99 \\
-		& \textbf{MLP} & \textbf{9.57} & \textbf{6.85} & 67.89 \\
-		\midrule
-		\multirow{3}{*}{\textbf{LBP}} & RF  & 16.37 & 12.43 & 1.02 \\
-		& SVR & 16.27 & 12.17 & 13.39 \\
-		& MLP & 15.94 & 12.14 & 32.92 \\
-		\midrule
-		\multirow{3}{*}{\textbf{SIFT}} & RF  & 17.89 & 13.68 & 12.12 \\
-		& SVR & 17.76 & 13.08 & 20.92 \\
-		& MLP & 22.31 & 17.19 & 30.10 \\
-		\bottomrule
-	\end{tabular}
-\end{table}
+Thực nghiệm được tiến hành quy mô lớn bằng cách đánh giá chéo 3 chiến lược tiền xử lý (Ảnh gốc, Phân vùng YCrCb, Phân vùng HSV) với các phương pháp trích xuất đặc trưng (HOG, LBP, SIFT-BoVW) đưa vào các mô hình học máy truyền thống (SVR, RF, MLP). Đối với mạng nơ-ron tích chập (CNN), đặc trưng tự động được học từ hai hệ màu (Ảnh Xám, Ảnh RGB). Có tổng cộng 33 cấu hình mô hình được huấn luyện và đánh giá trên tập kiểm thử.
+
+\subsection{Đánh giá kết quả phân vùng da}
+Hình~\ref{fig:face-segmentation} minh họa kết quả trực quan của hai chiến lược phân vùng dựa trên không gian màu YCrCb và HSV so với ảnh gốc. 
 
 \begin{figure}[!htbp]
-	\centering
-	\includegraphics[width=1\linewidth]{images/result_compare_3_model_3_extraction.png}
-	\caption{Biểu đồ so sánh RMSE và MAE của 3 phương pháp trích xuất đặc trưng với 3 mô hình học máy.}
-	\label{fig:compare-models}
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/segmentation.png} % Đổi lại đường dẫn tương ứng
+    \caption{So sánh mặt nạ phân vùng (Mask) và kết quả phân vùng da mặt (Segmentation) trên hai không gian màu YCrCb và HSV.}
+    \label{fig:face-segmentation}
 \end{figure}
 
-Qua Bảng~\ref{tab:feature-model-results} và Hình~\ref{fig:compare-models}, ta có thể rút ra một số nhận xét quan trọng:
+Qua quan sát, cả hai bộ lọc ngưỡng đều xác định thành công vùng da mặt và loại bỏ phần lớn nhiễu nền. Phương pháp YCrCb cho thấy khả năng nội suy các vùng chuyển tiếp ánh sáng tốt hơn, trong khi HSV có xu hướng khắt khe hơn và đôi khi tạo ra các mặt nạ bị khuyết tại các vùng đổ bóng hoặc vùng mắt/miệng. Tuy nhiên, việc áp dụng mặt nạ phân vùng vô tình cắt bỏ các thông tin ngữ cảnh quan trọng xung quanh khuôn mặt (như cấu trúc xương hàm, tóc và cổ) – những đặc điểm sinh lý chứa nhiều dấu hiệu lão hóa. Điều này tác động trực tiếp đến hiệu năng dự đoán ở các bước sau.
+
+\subsection{Đánh giá kết quả các mô hình}
+Bảng~\ref{tab:all-models-grouped} trình bày chi tiết hiệu năng của toàn bộ 33 cấu hình: 
+
+\begin{table}[H]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{1.15}
+    \caption{Tổng hợp kết quả đánh giá hiệu năng phân theo nhóm cấu trúc mô hình và đặc trưng.}
+    \label{tab:all-models-grouped}
+    \begin{tabular}{lllccc}
+        \toprule
+        \textbf{Cấu trúc} & \textbf{Đặc trưng/Hệ màu} & \textbf{Chiến lược} & \textbf{MAE $\downarrow$} & \textbf{RMSE $\downarrow$} & \textbf{R$^2$ $\uparrow$} \\
+        \midrule
+        % --- CNN ---
+        \multirow{6}{*}{\textbf{CNN}} 
+        & \multirow{3}{*}{Ảnh Xám} 
+        & Ảnh gốc & 6.618 & 9.729 & 0.762 \\
+        & & Phân vùng YCrCb & 7.429 & 11.152 & 0.687 \\
+        & & Phân vùng HSV & 7.615 & 11.409 & 0.672 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{Ảnh RGB} 
+        & Ảnh gốc & 6.894 & 9.994 & 0.749 \\
+        & & Phân vùng YCrCb & 7.008 & 10.341 & 0.731 \\
+        & & Phân vùng HSV & 8.806 & 13.250 & 0.558 \\
+        \midrule
+        
+        % --- MLP ---
+        \multirow{9}{*}{\textbf{MLP}} 
+        & \multirow{3}{*}{HOG} 
+        & Ảnh gốc & \textbf{6.504} & \textbf{9.094} & \textbf{0.792} \\
+        & & Phân vùng YCrCb & 6.978 & 10.002 & 0.748 \\
+        & & Phân vùng HSV & 7.529 & 10.762 & 0.709 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{LBP} 
+        & Ảnh gốc & 11.818 & 15.695 & 0.380 \\
+        & & Phân vùng YCrCb & 11.714 & 15.589 & 0.388 \\
+        & & Phân vùng HSV & 11.799 & 15.694 & 0.380 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{SIFT-BoVW} 
+        & Ảnh gốc & 16.584 & 21.760 & -0.192 \\
+        & & Phân vùng YCrCb & 16.902 & 22.029 & -0.221 \\
+        & & Phân vùng HSV & 17.220 & 22.360 & -0.258 \\
+        \midrule
+        
+        % --- SVR ---
+        \multirow{9}{*}{\textbf{SVR}} 
+        & \multirow{3}{*}{HOG} 
+        & Ảnh gốc & 8.892 & 12.194 & 0.626 \\
+        & & Phân vùng YCrCb & 9.508 & 13.288 & 0.556 \\
+        & & Phân vùng HSV & 9.910 & 13.888 & 0.515 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{LBP} 
+        & Ảnh gốc & 12.167 & 16.261 & 0.335 \\
+        & & Phân vùng YCrCb & 12.031 & 16.184 & 0.341 \\
+        & & Phân vùng HSV & 11.987 & 16.180 & 0.341 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{SIFT-BoVW} 
+        & Ảnh gốc & 13.380 & 17.926 & 0.191 \\
+        & & Phân vùng YCrCb & 13.329 & 17.890 & 0.195 \\
+        & & Phân vùng HSV & 13.415 & 17.965 & 0.188 \\
+        \midrule
+        
+        % --- RF ---
+        \multirow{9}{*}{\textbf{RF}} 
+        & \multirow{3}{*}{HOG} 
+        & Ảnh gốc & 9.509 & 12.754 & 0.591 \\
+        & & Phân vùng YCrCb & 10.027 & 13.573 & 0.536 \\
+        & & Phân vùng HSV & 10.262 & 13.941 & 0.511 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{LBP} 
+        & Ảnh gốc & 12.310 & 16.271 & 0.334 \\
+        & & Phân vùng YCrCb & 12.182 & 16.269 & 0.334 \\
+        & & Phân vùng HSV & 12.084 & 16.181 & 0.341 \\
+        \cmidrule{2-6}
+        & \multirow{3}{*}{SIFT-BoVW} 
+        & Ảnh gốc & 13.590 & 17.742 & 0.208 \\
+        & & Phân vùng YCrCb & 13.617 & 17.792 & 0.203 \\
+        & & Phân vùng HSV & 13.747 & 17.956 & 0.189 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Qua phân tích chuỗi số liệu từ bảng tổng hợp, ta có thể rút ra các kết luận chi tiết sau:
 \begin{itemize}
-	\item \textbf{Đặc trưng HOG vượt trội:} HOG cho kết quả tốt nhất ở tất cả các mô hình. Sự kết hợp giữa HOG và mạng nơ-ron đa tầng MLP đạt hiệu năng cao nhất trên toàn bộ thực nghiệm với MAE chỉ 6.85 tuổi. Điều này cho thấy định hướng gradient của HOG nắm bắt rất tốt hình thái nếp nhăn và đường nét cấu trúc khuôn mặt - những yếu tố cốt lõi để nhận diện độ tuổi.
-	\item \textbf{LBP và SIFT kém hiệu quả hơn:} LBP mô tả tốt kết cấu bề mặt cục bộ nhưng thiếu thông tin về hình dáng tổng thể, dẫn đến sai số tương đối cao (MAE $> 12$). SIFT thậm chí cho kết quả thấp nhất, đặc biệt khi kết hợp với MLP (MAE $= 17.19$). Việc tính trung bình (mean) tất cả các SIFT descriptors trong ảnh đã làm mất đi thông tin phân bố không gian quan trọng của khuôn mặt.
-	\item \textbf{Đánh giá thời gian huấn luyện:} Đặc trưng HOG sinh ra vector có số chiều lớn, làm tăng đáng kể thời gian huấn luyện đối với SVR (910s) và Random Forest (740s). Ngược lại, mạng MLP lại tối ưu hóa dữ liệu nhiều chiều rất tốt, chỉ tốn khoảng 68s nhưng lại mang về độ chính xác vượt trội.
+    \item \textbf{Hiệu năng tối ưu của cấu hình MLP kết hợp HOG trên ảnh gốc:} Cấu hình sử dụng mạng MLP huấn luyện trên đặc trưng HOG trích xuất từ ảnh gốc đạt kết quả tối ưu nhất với $MAE = 6.504$, $RMSE = 9.094$ và $R^2 = 0.792$. Kết quả này cho thấy bộ mô tả HOG biểu diễn hiệu quả các thông tin về cấu trúc biên và sự thay đổi gradient cục bộ (như nếp nhăn, đường viền khuôn mặt) mà ít bị ảnh hưởng bởi độ rọi sáng. Mạng nơ-ron đa tầng MLP với các hàm kích hoạt phi tuyến có khả năng ánh xạ không gian đặc trưng này sang giá trị độ tuổi liên tục với sai số thấp. Hiệu năng của cấu hình này có $MAE$ thấp hơn 0.114 so với biến thể tốt nhất của kiến trúc mạng CNN.
+    
+    \item \textbf{Ảnh hưởng của phương pháp tiền xử lý phân vùng da:} Việc áp dụng các kỹ thuật phân vùng da (YCrCb và HSV) làm tăng sai số dự đoán ở toàn bộ các cấu hình thực nghiệm. Đối với tổ hợp \texttt{MLP + HOG}, việc phân vùng bằng mặt nạ YCrCb làm $MAE$ tăng từ 6.504 lên 6.978, và $R^2$ giảm từ 0.792 xuống 0.748. Về mặt phân tích dữ liệu, quá trình phân vùng loại bỏ được các pixel nhiễu nền nhưng đồng thời làm mất đi các đặc điểm ngữ cảnh sinh lý quan trọng ở rìa khuôn mặt (như cấu trúc xương hàm, nếp nhăn cổ, đường chân tóc) – vốn là các dấu hiệu có độ tương quan cao với độ tuổi thực.
+    
+    \item \textbf{Tác động của không gian màu đối với mạng CNN:} Thực nghiệm trên kiến trúc CNN cho thấy biến thể sử dụng ảnh đầu vào kênh đơn (Ảnh xám) đạt hiệu năng nhỉnh hơn ($MAE = 6.618$) so với ảnh đầu vào ba kênh (Ảnh RGB) có $MAE = 6.894$. Sự chênh lệch biên độ nhỏ này cho thấy đối với bài toán hồi quy tuổi, thông tin về cấu trúc không gian và cường độ sáng (texture, hình học) mang trọng số quyết định. Việc bổ sung các kênh màu không những không cung cấp thêm đặc trưng lão hóa hữu ích mà còn làm tăng số lượng tham số đầu vào, từ đó gây ra một lượng nhiễu nhỏ cho quá trình tối ưu hóa.
 \end{itemize}
 
-Từ kết quả này, cấu hình \textbf{HOG + MLP} được lựa chọn làm mô hình tốt nhất để phân tích và đánh giá chuyên sâu hơn. Hình~\ref{fig:scatter-mlp-hog} thể hiện biểu đồ phân tán giữa tuổi thực tế và tuổi dự đoán của mô hình này. Phần lớn các điểm phân bố bám sát đường chéo trung tâm, chứng tỏ mô hình có khả năng hồi quy tuổi khá đồng đều.
+\subsection{Phân tích tương quan giữa MAE và R$^2$}
+Để có cái nhìn trực quan về phân bố hiệu năng, Hình~\ref{fig:scatter-mae-r2} định vị 33 cấu hình trong không gian hai chiều tạo bởi $MAE$ và $R^2$. 
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=1\linewidth]{images/scatter_MLP_HOG.png}
-	\caption{Biểu đồ phân tán (Scatter Plot) giữa tuổi thực tế và tuổi dự đoán của mô hình HOG + MLP.}
-	\label{fig:scatter-mlp-hog}
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{images/scatter_mae_r2.png} % Đổi lại đường dẫn tương ứng
+    \caption{Biểu đồ phân tán tổng quan: Tương quan giữa sai số tuyệt đối trung bình (MAE) và hệ số xác định ($R^2$) của toàn bộ 33 cấu hình.}
+    \label{fig:scatter-mae-r2}
 \end{figure}
 
+Dựa trên biểu đồ, sự phân bố hiệu năng của 33 cấu hình được phân tách rõ nét thành ba cụm chính:
+\begin{itemize}
+    \item \textbf{Cụm hiệu năng cao (MAE $< 10.5$, R$^2 > 0.5$):} Nằm ở khu vực nửa trên bên trái biểu đồ, tập trung toàn bộ các kiến trúc CNN và các tổ hợp sử dụng đặc trưng HOG. Điểm chung của các phương pháp trong cụm này là khả năng giữ lại và khai thác cấu trúc tổng thể cũng như thông tin hình học gradient liên tục của khuôn mặt.
+    \item \textbf{Cụm hiệu năng thấp (MAE từ 11.5 đến 14.0, R$^2$ từ 0.15 đến 0.40):} Bao gồm toàn bộ các cấu hình sử dụng đặc trưng Mẫu nhị phân cục bộ (LBP) và các mô hình SVR, RF sử dụng đặc trưng SIFT-BoVW. Mặc dù LBP lượng hóa tốt sự biến thiên kết cấu vi mô của bề mặt da, bộ mô tả này thiếu thông tin biểu diễn hình học ở quy mô lớn. Tương tự, SIFT-BoVW với các mô hình học máy dạng cây (RF) hay mặt phẳng lề (SVR) chỉ học được trên sự xuất hiện tần suất đặc trưng cục bộ, làm giới hạn nghiêm trọng khả năng xấp xỉ hàm mục tiêu.
+    \item \textbf{Cụm phân kỳ (MAE $> 16$, R$^2 < 0$):} Tập trung cục bộ ở góc dưới cùng bên phải biểu đồ, bao gồm duy nhất tổ hợp mạng nơ-ron đa tầng kết hợp Túi từ vựng thị giác (\texttt{MLP + SIFT-BoVW}). Giá trị $R^2$ âm chỉ ra rằng phương pháp này mất hoàn toàn khả năng giải thích phương sai của dữ liệu. Thuật toán BoVW lượng hóa các vector SIFT thành một lược đồ tần suất phi không gian; khi đưa ma trận thưa và phi tuyến này qua nhiều tầng perceptron ẩn, mô hình bị mất phương hướng gradient, dẫn tới hiện tượng dự đoán tồi tệ hơn cả việc gán một hằng số trung bình độ tuổi.
+\end{itemize}
+
 \section{Tổng kết chương}
-Chương này đã trình bày chi tiết quá trình thực nghiệm, từ việc phân tích đặc điểm phân bố của tập dữ liệu UTKFace đến thiết lập môi trường và cấu hình thông số huấn luyện. Các kết quả đánh giá cho thấy mô hình mạng nơ-ron đa tầng (MLP) kết hợp với đặc trưng định hướng gradient (HOG) đạt hiệu năng vượt trội so với các phương pháp khác. Đây sẽ là cấu hình tốt nhất được sử dụng để tiến hành phân tích lỗi chuyên sâu đối với các nhóm yếu tố nhân khẩu học trong chương tiếp theo.
+Chương 3 đã tường minh toàn bộ quy trình thiết lập thực nghiệm và tiến hành phân tích định lượng dựa trên các độ đo thống kê chuẩn mực. Kết quả cho thấy việc bảo toàn tính toàn vẹn của ảnh gốc mang lại lợi thế dự đoán cao hơn so với các phương pháp phân vùng da bằng hệ màu. Xét về phương pháp trích xuất, đặc trưng định hướng gradient (HOG) chứng minh mức độ phù hợp cao nhất với bài toán hồi quy tuổi. Xét về cấu trúc mô hình, \texttt{MLP + HOG} hoạt động hiệu quả nhất, vượt qua cả các biến thể học sâu CNN. Dựa trên các số liệu này, cấu hình \texttt{MLP + HOG} trên ảnh gốc được định danh là mô hình tối ưu nhất và sẽ được đưa vào làm mô hình tham chiếu để tiến hành phân tích sai số chéo theo các yếu tố nhân khẩu học ở chương tiếp theo.

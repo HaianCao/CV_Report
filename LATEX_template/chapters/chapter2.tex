@@ -1,150 +1,375 @@
+% % !TeX root = ../Main.tex
+% \chapter{Cơ sở lí thuyết}
+
+% Chương này trình bày các kiến thức nền tảng cần thiết cho bài toán ước lượng tuổi từ ảnh khuôn mặt. Nội dung tập trung vào các phương pháp trích xuất đặc trưng, giảm chiều dữ liệu và các mô hình hồi quy thường được sử dụng để dự đoán tuổi từ đặc trưng ảnh.
+
+% % pipeline tiền xử lý -> trích rút -> {giảm chiều} -> học máy
+% \begin{figure}[htbp]
+% \centering
+% % ensure box does not exceed line width and is centered inside the float
+% \resizebox{0.95\linewidth}{!}{%
+% \begin{tikzpicture}[node distance=2.5cm, every node/.style={align=center, inner sep=3pt, outer sep=0pt, font=\footnotesize}]
+% 	% define compact colored block style
+% 	\tikzset{block/.style={draw, rounded corners, minimum width=2.0cm, minimum height=0.85cm, align=center, outer sep=0pt}}
+
+% 	\node[block, fill=blue!12] (image) {Ảnh\\khuôn mặt};
+% 	\node[block, fill=cyan!10, right of=image] (preprocess) {Tiền xử lý\\dữ liệu};
+% 	\node[block, fill=teal!8, right of=preprocess] (extract) {Trích rút\\đặc trưng};
+% 	\node[block, fill=orange!12, right of=extract] (reduce) {Giảm chiều\\dữ liệu\\(Tùy chọn)};
+% 	\node[block, fill=red!10, right of=reduce] (regress) {Hồi quy\\tuổi};
+
+% 	% colored arrows
+% 	\draw[->, thick, >=stealth, draw=blue!60] (image) -- (preprocess);
+% 	\draw[->, thick, >=stealth, draw=cyan!60] (preprocess) -- (extract);
+% 	\draw[->, thick, >=stealth, draw=teal!60] (extract) -- (reduce);
+% 	\draw[->, thick, >=stealth, draw=orange!60] (reduce) -- (regress);
+% \end{tikzpicture}%
+% }
+% \caption{Sơ đồ pipeline xử lý: ảnh khuôn mặt → tiền xử lý → trích rút đặc trưng → giảm chiều dữ liệu (tùy chọn) → hồi quy tuổi.}
+% \label{fig:pipeline}
+% \end{figure}
+
+% \section{Các phương pháp trích xuất đặc trưng}
+% Trích xuất đặc trưng là bước quan trọng nhằm chuyển đổi ảnh khuôn mặt từ dữ liệu thô sang biểu diễn phù hợp hơn cho mô hình học máy. Một bộ đặc trưng hiệu quả cần bảo toàn thông tin quan trọng về hình dạng, biên, kết cấu và các vùng biến thiên trên khuôn mặt, đồng thời hạn chế ảnh hưởng của nhiễu và biến đổi chiếu sáng.
+
+% \subsection{Histogram of Oriented Gradients (HOG)}
+% Histogram of Oriented Gradients là phương pháp mô tả phân bố hướng gradient trong từng vùng nhỏ của ảnh. Ý tưởng chính của HOG là chia ảnh thành nhiều ô (cell), tính gradient tại từng điểm ảnh, sau đó phân bổ hướng gradient vào các bin của histogram định hướng (orientation histogram). Các histogram này được chuẩn hoá theo từng khối (block) để giảm ảnh hưởng của thay đổi độ sáng và tương phản.
+
+% Về mặt tính toán, đặt $I(x,y)$ là giá trị cường độ pixel tại vị trí $(x,y)$. Gradient theo phương ngang và dọc được lấy bằng tích chập với các toán tử đạo hàm (ví dụ Sobel):
+% \[
+% G_x = I * \nabla_x, \qquad G_y = I * \nabla_y.
+% \]
+% Trong đó $\nabla_x,\nabla_y$ là các toán tử theo hai hướng $x,y$. Đặt độ lớn gradient là $m(x,y)$, khi đó:
+% \[
+% m(x,y) = \sqrt{G_x(x,y)^2 + G_y(x,y)^2}.
+% \]
+% Hướng gradient được tính bởi:
+% \[
+% \theta(x,y) = \tan^{-1}\!\left(\dfrac{G_y(x,y)}{G_x(x,y)}\right).
+% \]
+% Mỗi pixel đóng góp vào các bin định hướng của histogram theo trọng số là độ lớn gradient $m(x,y)$. Với vector histogram khối $h$, bước chuẩn hoá phổ biến là L2-Hys:
+% \[
+% \hat{h} = \frac{h}{\sqrt{\lVert h \rVert_2^2 + \varepsilon^2}}.
+% \]
+% Về số chiều, với ảnh xám $I\in\mathbb{R}^{H\times W}$ thì $G_x,G_y,m,\theta\in\mathbb{R}^{H\times W}$; vector đặc trưng HOG cuối cùng được ký hiệu $x_{\mathrm{HOG}}\in\mathbb{R}^{d_{\mathrm{HOG}}}$.
+% Mô tả HOG chuẩn và hiệu quả của nó cho nhận dạng đối tượng được trình bày trong \cite{Dalal2005HOG}.
+
+% HOG thường được sử dụng để biểu diễn cấu trúc biên và hình dạng tổng thể của khuôn mặt, do đặc trưng này nhạy với các chuyển tiếp cường độ cục bộ. Phương pháp này có tính ổn định tương đối trước biến đổi cường độ và sinh ra biểu diễn đặc trưng có khả năng phân biệt tương đối tốt. Tuy nhiên, HOG phụ thuộc đáng kể vào căn chỉnh ảnh đầu vào và có thể không mô tả đầy đủ các chi tiết kết cấu tinh vi trên khuôn mặt.
+
+% \subsection{Local Binary Pattern (LBP)}
+% Local Binary Pattern là phương pháp mô tả kết cấu ảnh bằng cách so sánh giá trị điểm ảnh trung tâm với các điểm lân cận. Nếu điểm lân cận lớn hơn hoặc bằng điểm trung tâm thì gán giá trị 1, ngược lại gán 0. Chuỗi nhị phân thu được sẽ được chuyển thành một mã số để biểu diễn đặc trưng vùng ảnh.
+
+% Định nghĩa LBP tổng quát với $P$ điểm lân cận trên vòng tròn bán kính $R$:
+% \[
+% \mathrm{LBP}_{P,R} = \sum_{p=0}^{P-1} s(g_p-g_c)\,2^p,
+% \]
+% trong đó $g_c$ là mức xám điểm trung tâm, $g_p$ là mức xám điểm lân cận thứ $p$, và
+% \[
+% s(t)=
+% \begin{cases}
+% 1, & t\ge 0\\
+% 0, & t<0.
+% \end{cases}
+% \]
+% Histogram các mã LBP theo từng vùng sau đó được nối lại thành vector đặc trưng toàn ảnh. Công thức và các biến thể "uniform patterns" được mô tả trong \cite{Ojala2002LBP}.
+% Về số chiều, mỗi mã LBP thuộc tập $\{0,\dots,2^P-1\}$, histogram của một vùng thuộc $\mathbb{R}^{2^P}$; khi nối các vùng, đặc trưng toàn ảnh được ký hiệu $x_{\mathrm{LBP}}\in\mathbb{R}^{d_{\mathrm{LBP}}}$.
+
+% LBP khai thác hiệu quả thông tin kết cấu cục bộ trên khuôn mặt, đặc biệt tại các vùng như trán, mắt, má và nếp nhăn. Phương pháp này có độ phức tạp tính toán thấp và ít nhạy với các biến đổi đơn điệu về độ sáng. Hạn chế của LBP là có thể nhạy với nhiễu cục bộ và không mô tả tốt quan hệ hình học ở quy mô lớn.
+
+% \subsection{Scale-Invariant Feature Transform (SIFT)}
+% Scale-Invariant Feature Transform là phương pháp phát hiện và mô tả các điểm đặc trưng nổi bật trong ảnh. SIFT xây dựng không gian tỉ lệ bằng cách làm trơn ảnh với nhân Gaussian, sau đó tìm điểm cực trị trên ảnh sai khác Gaussian (Difference of Gaussians) để xác định keypoint bất biến theo tỉ lệ \cite{Lowe2004SIFT}.
+
+% Ảnh ở mức tỉ lệ $\sigma$ được tính bởi:
+% \[
+% L(x,y,\sigma)=G(x,y,\sigma)*I(x,y),
+% \]
+% trong đó nhân Gaussian được viết là:
+% \[
+% G(x,y,\sigma)=\frac{1}{2\pi\sigma^2}\exp\!\left(-\frac{x^2+y^2}{2\sigma^2}\right).
+% \]
+% Ảnh sai khác Gaussian (Difference of Gaussians) giữa hai mức tỉ lệ liên tiếp là:
+% \[
+% D(x,y,\sigma)=L(x,y,k\sigma)-L(x,y,\sigma).
+% \]
+
+% Toán tử DoG được dùng để xấp xỉ Laplacian của Gaussian (LoG):
+% \[
+% \nabla^2 I = \frac{\partial^2 I}{\partial x^2} + \frac{\partial^2 I}{\partial y^2}.
+% \]
+% Cụ thể, DoG $D(x,y,\sigma)$ xấp xỉ $\sigma^2 \nabla^2 G(x,y,\sigma)*I(x,y)$ với độ chính xác cao, nhưng tính toán nhanh hơn nhiều. Do đó, tìm cực trị trên DoG sẽ xác định điểm ổn định theo lý thuyết của LoG, nhưng với chi phí tính toán thấp hơn.
+
+% Sau khi định vị keypoint, gradient cục bộ tại vùng lân cận được tính bởi:
+% \[
+% G_x = I * \nabla_x, \qquad G_y = I * \nabla_y,
+% \]
+% \[
+% m(x,y)=\sqrt{G_x^2+G_y^2}, \qquad
+% \theta(x,y)=\tan^{-1}\!\left(\dfrac{G_y}{G_x}\right).
+% \]
+% Vùng xung quanh keypoint được chia thành lưới $4\times 4$ ô, mỗi ô tạo một histogram gồm 8 hướng. Ghép 16 histogram này lại sẽ thu được descriptor 128 chiều.
+% Về số chiều, $L(\cdot,\cdot,\sigma),D(\cdot,\cdot,\sigma)\in\mathbb{R}^{H\times W}$ và mỗi descriptor cục bộ $s_j\in\mathbb{R}^{128}$; sau bước gom/pooling về độ dài cố định, đặc trưng đầu vào mô hình hồi quy được ký hiệu $x_{\mathrm{SIFT}}\in\mathbb{R}^{d_{\mathrm{SIFT}}}$.
+
+% SIFT có tính bất biến tương đối đối với thay đổi tỉ lệ và phép quay, đồng thời ổn định một phần trước biến thiên chiếu sáng. Trong bài toán ảnh khuôn mặt, SIFT có thể được sử dụng để phát hiện các điểm đặc trưng như mắt, mũi, miệng hoặc các vùng có độ biến thiên cao. Tuy nhiên, việc trích xuất SIFT thường có chi phí tính toán cao hơn HOG và LBP, đồng thời số lượng điểm đặc trưng có thể thay đổi giữa các ảnh, gây khó khăn khi xây dựng biểu diễn cố định cho mô hình hồi quy.
+
+% \section{Giảm chiều dữ liệu}
+% Sau khi trích xuất đặc trưng, vector đặc trưng thường có số chiều lớn và chứa nhiều thành phần dư thừa. Giảm chiều dữ liệu giúp rút gọn không gian đặc trưng, giảm chi phí tính toán và có thể cải thiện khả năng tổng quát hoá của mô hình.
+
+% \subsection{Principal Component Analysis (PCA)}
+% Principal Component Analysis là phương pháp giảm chiều tuyến tính bằng cách tìm các trục mới sao cho dữ liệu được biểu diễn với phương sai lớn nhất trên các trục đầu tiên. PCA biến đổi vector đặc trưng ban đầu sang một không gian mới gồm các thành phần chính, trong đó mỗi thành phần là một tổ hợp tuyến tính của các biến gốc.
+
+% Với ma trận dữ liệu đã chuẩn hoá trung bình $X \in \mathbb{R}^{n\times d}$, ma trận hiệp phương sai:
+% \[
+% C = \frac{1}{n-1}X^\top X.
+% \]
+% Các thành phần chính thu được từ bài toán trị riêng:
+% \[
+% Cu_i = \lambda_i u_i, \quad \lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_d.
+% \]
+% Giữ $k$ vector riêng đầu tiên $U_k=[u_1,\dots,u_k]$, phép chiếu đặc trưng là:
+% \[
+% z = U_k^\top (x-\mu).
+% \]
+% Trong đó $x,\mu\in\mathbb{R}^{d}$, $U_k\in\mathbb{R}^{d\times k}$ và $z\in\mathbb{R}^{k}$.
+% Nội dung nền tảng và cách chọn số thành phần chính được trình bày trong \cite{Jolliffe2002PCA}.
+
+% Trong thực tế, PCA thường được dùng để nén dữ liệu đặc trưng trước khi đưa vào mô hình hồi quy. Lợi ích của PCA là giảm số chiều, loại bỏ một phần nhiễu và giảm hiện tượng đa cộng tuyến giữa các biến. Tuy nhiên, PCA có hạn chế là làm mất một phần thông tin gốc và chỉ phù hợp với các quan hệ tuyến tính.
+
+% \section{Các mô hình hồi quy}
+% Sau khi có đặc trưng ảnh, bài toán ước lượng tuổi được mô hình hoá như một bài toán hồi quy, trong đó đầu ra là một giá trị liên tục. Các mô hình hồi quy được sử dụng để học mối quan hệ giữa đặc trưng khuôn mặt và tuổi thực.
+
+% \subsection{Support Vector Regression (SVR)}
+% Support Vector Regression là biến thể của Support Vector Machine dùng cho bài toán hồi quy. SVR cố gắng tìm một hàm dự đoán sao cho sai số nằm trong một ngưỡng cho phép, đồng thời vẫn giữ cho mô hình đơn giản nhất có thể.
+
+% Dạng tối ưu hoá chuẩn của $\varepsilon$-SVR:
+% \[
+% \min_{w,b,\xi,\xi^*} \frac{1}{2}\lVert w\rVert^2 + C\sum_{i=1}^{n}(\xi_i+\xi_i^*)
+% \]
+% với các ràng buộc
+% \[
+% \begin{aligned}
+% y_i - (w^\top\phi(x_i)+b) &\le \varepsilon + \xi_i,\\
+% (w^\top\phi(x_i)+b) - y_i &\le \varepsilon + \xi_i^*,\\
+% \xi_i,\xi_i^* &\ge 0.
+% \end{aligned}
+% \]
+% Trong không gian kernel, hàm dự đoán:
+% \[
+% f(x)=\sum_{i=1}^{n}(\alpha_i-\alpha_i^*)K(x_i,x)+b.
+% \]
+% Về số chiều, mỗi mẫu đặc trưng $x_i\in\mathbb{R}^{d}$, đầu ra $y_i\in\mathbb{R}$, vector tham số tuyến tính $w\in\mathbb{R}^{d_\phi}$ trong không gian đặc trưng $\phi(x)\in\mathbb{R}^{d_\phi}$.
+% Các kết quả gốc về SVR và bài toán hồi quy SVM được trình bày trong \cite{Drucker1997SVR}.
+
+% SVR hoạt động hiệu quả trên dữ liệu có số chiều vừa phải và có thể kết hợp với các hàm kernel để mô hình hoá quan hệ phi tuyến. Trong bài toán ước lượng tuổi, SVR thường được xem như một mô hình tham chiếu do khả năng làm việc tốt với vector đặc trưng đã trích xuất. Tuy nhiên, SVR có thể khó mở rộng khi dữ liệu quá lớn.
+
+% \subsection{Random Forest}
+% Random Forest là mô hình tổ hợp gồm nhiều cây quyết định được huấn luyện trên các tập con khác nhau của dữ liệu và đặc trưng. Với bài toán hồi quy, đầu ra của Random Forest là giá trị trung bình từ các cây thành phần.
+
+% Nếu rừng có $T$ cây hồi quy $f_t(x)$, dự đoán cuối cùng là:
+% \[
+% \hat{y}(x)=\frac{1}{T}\sum_{t=1}^{T} f_t(x).
+% \]
+% Mỗi cây thường được học từ bootstrap sample và tách nhánh theo tiêu chí giảm phương sai (hoặc MSE), ví dụ:
+% \[
+% \mathrm{MSE}(S)=\frac{1}{|S|}\sum_{(x_i,y_i)\in S}(y_i-\bar{y}_S)^2.
+% \]
+% Về số chiều, $x\in\mathbb{R}^{d}$, $y\in\mathbb{R}$ và mỗi cây hồi quy là ánh xạ $f_t:\mathbb{R}^{d}\to\mathbb{R}$.
+% Kết hợp bagging và lựa chọn ngẫu nhiên tập con đặc trưng giúp giảm phương sai và tăng khả năng tổng quát hoá của mô hình \cite{Breiman2001RF}.
+
+% Random Forest có tính ổn định cao hơn một cây quyết định đơn lẻ, ít bị quá khớp và có khả năng xử lý quan hệ phi tuyến giữa đặc trưng và đầu ra. Tuy vậy, mô hình này có thể không khai thác đầy đủ cấu trúc phức tạp trong dữ liệu ảnh và phụ thuộc nhiều vào chất lượng đặc trưng đầu vào.
+
+% \subsection{Multi-Layer Perceptron Regression}
+% Multi-Layer Perceptron Regression là mô hình mạng nơ-ron nhiều lớp được sử dụng cho bài toán dự đoán giá trị liên tục. Mô hình gồm các lớp ẩn với hàm kích hoạt phi tuyến và một lớp đầu ra cho giá trị hồi quy.
+
+% Đặt $a^{(0)}=x\in\mathbb{R}^{d_0}$, với mỗi lớp $\ell$ có $W^{(\ell)}\in\mathbb{R}^{d_\ell\times d_{\ell-1}}$, $b^{(\ell)}\in\mathbb{R}^{d_\ell}$, và $f^{(\ell)},a^{(\ell)},\delta^{(\ell)}\in\mathbb{R}^{d_\ell}$. Ở đầu ra hồi quy một biến, $\hat{y},y\in\mathbb{R}$.
+
+% \textbf{Feedforward}
+% \[
+% \begin{aligned}
+% f^{(\ell)}(x) &:= W^{(\ell)}a^{(\ell-1)} + b^{(\ell)}, \\
+% a^{(\ell)} &:= \max\!\left(0, f^{(\ell)}(x)\right), \qquad \ell=1,\dots,L-1, \\
+% f^{(L)}(x) &:= W^{(L)}a^{(L-1)} + b^{(L)}, \\
+% \hat{y} &:= f^{(L)}(x).
+% \end{aligned}
+% \]
+
+% \textbf{Hàm mất mát}
+% \[
+% \mathcal{L}_{\mathrm{MSE}} := \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2.
+% \]
+
+% \textbf{Backpropagation}
+% \[
+% \begin{aligned}
+% \delta^{(L)}
+% &:= \frac{\partial \mathcal{L}}{\partial f^{(L)}} = \frac{2}{n}(\hat{y}-y), \\
+% \delta^{(\ell)}
+% &:= \frac{\partial \mathcal{L}}{\partial f^{(\ell)}}
+% = \left(W^{(\ell+1)}\right)^\top \delta^{(\ell+1)} \odot \mathbf{1}_{f^{(\ell)}>0},
+% \quad \ell=L-1,\dots,1, \\
+% \frac{\partial \mathcal{L}}{\partial W^{(\ell)}}
+% &:= \delta^{(\ell)}\left(a^{(\ell-1)}\right)^\top, \\
+% \frac{\partial \mathcal{L}}{\partial b^{(\ell)}}
+% &:= \delta^{(\ell)}.
+% \end{aligned}
+% \]
+
+% \textbf{Cập nhật tham số}
+% \[
+% \begin{aligned}
+% W^{(\ell)} &:= W^{(\ell)} - \eta\frac{\partial \mathcal{L}}{\partial W^{(\ell)}}, \\
+% b^{(\ell)} &:= b^{(\ell)} - \eta\frac{\partial \mathcal{L}}{\partial b^{(\ell)}}.
+% \end{aligned}
+% \]
+% Trình bày nền tảng về MLP và huấn luyện mạng nơ-ron có thể xem trong \cite{Bishop1995NN}.
+
+% MLP Regression có khả năng học các quan hệ phi tuyến giữa đặc trưng khuôn mặt và tuổi, đặc biệt khi đầu vào đã được rút gọn và chuẩn hoá tốt. Mô hình này linh hoạt hơn các phương pháp tuyến tính nhưng cần điều chỉnh số lớp, số nút và tham số huấn luyện để tránh quá khớp.
+
+% \section{Tổng kết chương}
+% Các phương pháp trích xuất đặc trưng như HOG, LBP và SIFT giúp chuyển đổi ảnh khuôn mặt sang dạng biểu diễn phù hợp hơn cho mô hình học máy. PCA hỗ trợ giảm chiều và nén thông tin, còn các mô hình hồi quy như SVR, Random Forest và MLP Regression là những lựa chọn phổ biến để dự đoán tuổi từ đặc trưng đã rút trích. Đây là cơ sở để xây dựng và so sánh các phương pháp trong những chương tiếp theo.
+
+
 % !TeX root = ../Main.tex
 \chapter{Cơ sở lí thuyết}
 
-Chương này trình bày các kiến thức nền tảng cần thiết cho bài toán ước lượng tuổi từ ảnh khuôn mặt. Nội dung tập trung vào các phương pháp trích xuất đặc trưng, giảm chiều dữ liệu và các mô hình hồi quy thường được sử dụng để dự đoán tuổi từ đặc trưng ảnh.
+Chương này trình bày các phương pháp tiền xử lý và phân vùng khuôn mặt, các phương pháp trích xuất đặc trưng hình ảnh, kỹ thuật gom cụm đặc trưng cục bộ, phương pháp giảm chiều dữ liệu và các mô hình học máy được sử dụng để dự đoán tuổi liên tục.
 
 % pipeline tiền xử lý -> trích rút -> {giảm chiều} -> học máy
 \begin{figure}[htbp]
 \centering
 % ensure box does not exceed line width and is centered inside the float
-\resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[node distance=2.5cm, every node/.style={align=center, inner sep=3pt, outer sep=0pt, font=\footnotesize}]
-	% define compact colored block style
-	\tikzset{block/.style={draw, rounded corners, minimum width=2.0cm, minimum height=0.85cm, align=center, outer sep=0pt}}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[node distance=2.9cm, every node/.style={align=center, inner sep=3pt, outer sep=0pt, font=\footnotesize}]
+    % define compact colored block style
+    \tikzset{block/.style={draw, rounded corners, minimum width=1.8cm, minimum height=0.85cm, align=center, outer sep=0pt}}
 
-	\node[block, fill=blue!12] (image) {Ảnh\\khuôn mặt};
-	\node[block, fill=cyan!10, right of=image] (preprocess) {Tiền xử lý\\dữ liệu};
-	\node[block, fill=teal!8, right of=preprocess] (extract) {Trích rút\\đặc trưng};
-	\node[block, fill=orange!12, right of=extract] (reduce) {Giảm chiều\\dữ liệu\\(Tùy chọn)};
-	\node[block, fill=red!10, right of=reduce] (regress) {Hồi quy\\tuổi};
+    \node[block, fill=blue!12] (image) {Ảnh\\khuôn mặt};
+    \node[block, fill=cyan!10, right of=image] (preprocess) {Tiền xử lý\\\& Phân vùng\\dữ liệu};
+    \node[block, fill=teal!8, right of=preprocess] (extract) {Trích xuất\\đặc trưng\\(HOG,\\LBP,\\SIFT)};
+    \node[block, fill=purple!10, right of=extract] (bow) {Gom cụm\\đặc trưng\\cục bộ\\(Tuỳ chọn\\cho SIFT)};
+    \node[block, fill=orange!12, right of=bow] (reduce) {Giảm chiều\\dữ liệu\\(PCA)};
+    \node[block, fill=red!10, right of=reduce] (regress) {Hồi quy\\tuổi\\(ML/CNN)};
 
-	% colored arrows
-	\draw[->, thick, >=stealth, draw=blue!60] (image) -- (preprocess);
-	\draw[->, thick, >=stealth, draw=cyan!60] (preprocess) -- (extract);
-	\draw[->, thick, >=stealth, draw=teal!60] (extract) -- (reduce);
-	\draw[->, thick, >=stealth, draw=orange!60] (reduce) -- (regress);
+    % colored arrows
+    \draw[->, thick, >=stealth, draw=blue!60] (image) -- (preprocess);
+    \draw[->, thick, >=stealth, draw=cyan!60] (preprocess) -- (extract);
+    \draw[->, thick, >=stealth, draw=teal!60] (extract) -- (bow);
+    \draw[->, thick, >=stealth, draw=purple!60] (bow) -- (reduce);
+    \draw[->, thick, >=stealth, draw=orange!60] (reduce) -- (regress);
+    
+    % bypass arrow for features that don't need clustering
+    \draw[->, thick, >=stealth, draw=teal!60] (extract.south) -- ++(0,-0.8) -| (reduce.south);
 \end{tikzpicture}%
 }
-\caption{Sơ đồ pipeline xử lý: ảnh khuôn mặt → tiền xử lý → trích rút đặc trưng → giảm chiều dữ liệu (tùy chọn) → hồi quy tuổi.}
+\caption{Sơ đồ quy trình xử lý tổng quát: Ảnh khuôn mặt $\rightarrow$ Tiền xử lý và phân vùng da $\rightarrow$ Trích xuất đặc trưng $\rightarrow$ Gom cụm đặc trưng cục bộ (áp dụng cho SIFT) $\rightarrow$ Giảm chiều dữ liệu PCA (tùy chọn) $\rightarrow$ Mô hình hồi quy tuổi.}
 \label{fig:pipeline}
 \end{figure}
 
+\section{Tiền xử lý và phân vùng khuôn mặt}
+\subsection{Phân vùng da dựa trên không gian màu}
+Việc loại bỏ các vùng nền không chứa thông tin khuôn mặt hỗ trợ giảm thiểu nhiễu trong quá trình trích xuất đặc trưng. Do sự biến thiên của yếu tố ánh sáng, không gian màu RGB không phù hợp cho việc phân ngưỡng màu da trực tiếp. Vì vậy, dữ liệu hình ảnh thường được chuyển đổi sang các không gian màu tách biệt giữa thành phần độ sáng và thành phần sắc độ.
+
+\textbf{Không gian màu YCrCb:}
+Hệ màu này phân tách thông tin hình ảnh thành thành phần độ rọi sáng ($Y$) và hai thành phần sắc độ ($Cr$ biểu diễn sai lệch màu đỏ, $Cb$ biểu diễn sai lệch màu xanh lam). Phân bố màu da của các nhóm nhân khẩu học khác nhau có xu hướng co cụm trong một dải hẹp trên mặt phẳng sắc độ $Cr-Cb$. Phép chuyển đổi từ không gian màu RGB sang YCrCb được thực hiện qua biểu thức toán học:
+$$
+\begin{bmatrix} Y \\ Cr \\ Cb \end{bmatrix} = \begin{bmatrix} 0.299 & 0.587 & 0.114 \\ 0.500 & -0.418 & -0.081 \\ -0.168 & -0.331 & 0.500 \end{bmatrix} \begin{bmatrix} R \\ G \\ B \end{bmatrix} + \begin{bmatrix} 0 \\ 128 \\ 128 \end{bmatrix}
+$$
+
+\textbf{Không gian màu HSV:}
+Hệ màu HSV biểu diễn thông tin màu sắc thông qua ba thành phần: sắc độ (\textit{Hue - H}), độ bão hoà (\textit{Saturation - S}) và giá trị độ sáng (\textit{Value - V}). Bằng việc thiết lập ngưỡng chặn trên và ngưỡng chặn dưới phù hợp cho ba kênh này, một mặt nạ nhị phân được xây dựng để lọc tách các điểm ảnh thuộc vùng da. Các phép toán hình thái học bao gồm phép mở (\textit{Opening}) và phép đóng (\textit{Closing}) được áp dụng kế tiếp nhằm loại bỏ nhiễu cục bộ và điền đầy các lỗ trống bên trong vùng phân vùng mặt.
+
 \section{Các phương pháp trích xuất đặc trưng}
-Trích xuất đặc trưng là bước quan trọng nhằm chuyển đổi ảnh khuôn mặt từ dữ liệu thô sang biểu diễn phù hợp hơn cho mô hình học máy. Một bộ đặc trưng hiệu quả cần bảo toàn thông tin quan trọng về hình dạng, biên, kết cấu và các vùng biến thiên trên khuôn mặt, đồng thời hạn chế ảnh hưởng của nhiễu và biến đổi chiếu sáng.
+Trích xuất đặc trưng chuyển đổi ảnh khuôn mặt từ dạng điểm ảnh thô sang các biểu diễn toán học. Một bộ đặc trưng hiệu quả cần giữ lại các thông tin về hình học, đường biên, kết cấu, đồng thời ít bị ảnh hưởng bởi biến đổi chiếu sáng hay góc nhìn.
 
 \subsection{Histogram of Oriented Gradients (HOG)}
-Histogram of Oriented Gradients là phương pháp mô tả phân bố hướng gradient trong từng vùng nhỏ của ảnh. Ý tưởng chính của HOG là chia ảnh thành nhiều ô (cell), tính gradient tại từng điểm ảnh, sau đó phân bổ hướng gradient vào các bin của histogram định hướng (orientation histogram). Các histogram này được chuẩn hoá theo từng khối (block) để giảm ảnh hưởng của thay đổi độ sáng và tương phản.
+Lược đồ hướng gradient (\textit{Histogram of Oriented Gradients - HOG}) \cite{Dalal2005HOG} mô tả đối tượng thông qua sự phân bố các hướng gradient của cường độ điểm ảnh. Ảnh được chia thành các ô nhỏ, gradient được tính toán tại mỗi điểm, và biên độ gradient được cộng dồn vào một lược đồ định hướng. Các ô được nhóm thành các khối lớn hơn để chuẩn hoá cục bộ, giúp giảm thiểu ảnh hưởng của sự thay đổi độ tương phản.
 
-Về mặt tính toán, đặt $I(x,y)$ là giá trị cường độ pixel tại vị trí $(x,y)$. Gradient theo phương ngang và dọc được lấy bằng tích chập với các toán tử đạo hàm (ví dụ Sobel):
+Với $I(x,y)$ là cường độ điểm ảnh tại toạ độ $(x,y)$, gradient theo phương ngang và dọc được tính thông qua phép tích chập:
 \[
-G_x = I * \nabla_x, \qquad G_y = I * \nabla_y.
+G_x = I * \nabla_x, \qquad G_y = I * \nabla_y
 \]
-Trong đó $\nabla_x,\nabla_y$ là các toán tử theo hai hướng $x,y$. Đặt độ lớn gradient là $m(x,y)$, khi đó:
+Biên độ gradient $m(x,y)$ và hướng gradient $\theta(x,y)$ được xác định bởi:
 \[
-m(x,y) = \sqrt{G_x(x,y)^2 + G_y(x,y)^2}.
+m(x,y) = \sqrt{G_x(x,y)^2 + G_y(x,y)^2}
 \]
-Hướng gradient được tính bởi:
 \[
-\theta(x,y) = \tan^{-1}\!\left(\dfrac{G_y(x,y)}{G_x(x,y)}\right).
+\theta(x,y) = \tan^{-1}\!\left(\dfrac{G_y(x,y)}{G_x(x,y)}\right)
 \]
-Mỗi pixel đóng góp vào các bin định hướng của histogram theo trọng số là độ lớn gradient $m(x,y)$. Với vector histogram khối $h$, bước chuẩn hoá phổ biến là L2-Hys:
+Tại mỗi điểm ảnh, giá trị $m(x,y)$ được dùng làm trọng số cộng vào lược đồ định hướng. Với vector lược đồ khối $h$, bước chuẩn hoá L2-Hys được áp dụng:
 \[
-\hat{h} = \frac{h}{\sqrt{\lVert h \rVert_2^2 + \varepsilon^2}}.
+\hat{h} = \frac{h}{\sqrt{\lVert h \rVert_2^2 + \varepsilon^2}}
 \]
-Về số chiều, với ảnh xám $I\in\mathbb{R}^{H\times W}$ thì $G_x,G_y,m,\theta\in\mathbb{R}^{H\times W}$; vector đặc trưng HOG cuối cùng được ký hiệu $x_{\mathrm{HOG}}\in\mathbb{R}^{d_{\mathrm{HOG}}}$.
-Mô tả HOG chuẩn và hiệu quả của nó cho nhận dạng đối tượng được trình bày trong \cite{Dalal2005HOG}.
-
-HOG thường được sử dụng để biểu diễn cấu trúc biên và hình dạng tổng thể của khuôn mặt, do đặc trưng này nhạy với các chuyển tiếp cường độ cục bộ. Phương pháp này có tính ổn định tương đối trước biến đổi cường độ và sinh ra biểu diễn đặc trưng có khả năng phân biệt tương đối tốt. Tuy nhiên, HOG phụ thuộc đáng kể vào căn chỉnh ảnh đầu vào và có thể không mô tả đầy đủ các chi tiết kết cấu tinh vi trên khuôn mặt.
+HOG biểu diễn cấu trúc hình dáng tổng quát và các đường biên thô của khuôn mặt. Tuy nhiên, phương pháp này yêu cầu ảnh đầu vào phải được căn chỉnh không gian chuẩn xác và không mô tả chi tiết được các kết cấu nhỏ.
 
 \subsection{Local Binary Pattern (LBP)}
-Local Binary Pattern là phương pháp mô tả kết cấu ảnh bằng cách so sánh giá trị điểm ảnh trung tâm với các điểm lân cận. Nếu điểm lân cận lớn hơn hoặc bằng điểm trung tâm thì gán giá trị 1, ngược lại gán 0. Chuỗi nhị phân thu được sẽ được chuyển thành một mã số để biểu diễn đặc trưng vùng ảnh.
+Mẫu nhị phân cục bộ (\textit{Local Binary Pattern - LBP}) \cite{Ojala2002LBP} là phương pháp mô tả kết cấu bằng cách ngưỡng hoá các điểm ảnh lân cận xung quanh một điểm trung tâm để tạo thành một chuỗi nhị phân.
 
-Định nghĩa LBP tổng quát với $P$ điểm lân cận trên vòng tròn bán kính $R$:
+Xét một lân cận gồm $P$ điểm nằm trên vòng tròn bán kính $R$. Toán tử LBP được tính bằng:
 \[
-\mathrm{LBP}_{P,R} = \sum_{p=0}^{P-1} s(g_p-g_c)\,2^p,
+\mathrm{LBP}_{P,R} = \sum_{p=0}^{P-1} s(g_p-g_c)\,2^p
 \]
-trong đó $g_c$ là mức xám điểm trung tâm, $g_p$ là mức xám điểm lân cận thứ $p$, và
+trong đó $g_c$ là mức xám điểm trung tâm, $g_p$ là mức xám của điểm lân cận thứ $p$, và hàm $s(t)$ là:
 \[
 s(t)=
 \begin{cases}
 1, & t\ge 0\\
-0, & t<0.
+0, & t<0
 \end{cases}
 \]
-Histogram các mã LBP theo từng vùng sau đó được nối lại thành vector đặc trưng toàn ảnh. Công thức và các biến thể "uniform patterns" được mô tả trong \cite{Ojala2002LBP}.
-Về số chiều, mỗi mã LBP thuộc tập $\{0,\dots,2^P-1\}$, histogram của một vùng thuộc $\mathbb{R}^{2^P}$; khi nối các vùng, đặc trưng toàn ảnh được ký hiệu $x_{\mathrm{LBP}}\in\mathbb{R}^{d_{\mathrm{LBP}}}$.
-
-LBP khai thác hiệu quả thông tin kết cấu cục bộ trên khuôn mặt, đặc biệt tại các vùng như trán, mắt, má và nếp nhăn. Phương pháp này có độ phức tạp tính toán thấp và ít nhạy với các biến đổi đơn điệu về độ sáng. Hạn chế của LBP là có thể nhạy với nhiễu cục bộ và không mô tả tốt quan hệ hình học ở quy mô lớn.
+Lược đồ tần suất của các mã LBP trên toàn ảnh tạo thành vector đặc trưng $x_{\mathrm{LBP}} \in \mathbb{R}^{d_{\mathrm{LBP}}}$. LBP hiệu quả trong việc trích xuất kết cấu vi mô (nếp nhăn, đặc điểm da), có chi phí tính toán thấp và không bị ảnh hưởng bởi các biến đổi chiếu sáng đồng đều. Nhược điểm của LBP là không biểu diễn được cấu trúc hình học ở quy mô lớn.
 
 \subsection{Scale-Invariant Feature Transform (SIFT)}
-Scale-Invariant Feature Transform là phương pháp phát hiện và mô tả các điểm đặc trưng nổi bật trong ảnh. SIFT xây dựng không gian tỉ lệ bằng cách làm trơn ảnh với nhân Gaussian, sau đó tìm điểm cực trị trên ảnh sai khác Gaussian (Difference of Gaussians) để xác định keypoint bất biến theo tỉ lệ \cite{Lowe2004SIFT}.
+Phép biến đổi đặc trưng bất biến tỷ lệ (\textit{Scale-Invariant Feature Transform - SIFT}) \cite{Lowe2004SIFT} trích xuất các điểm đặc trưng cục bộ. Phương pháp này có tính bất biến đối với phép biến đổi tỷ lệ, phép quay và phép tịnh tiến.
 
-Ảnh ở mức tỉ lệ $\sigma$ được tính bởi:
+SIFT bắt đầu bằng việc xây dựng không gian tỷ lệ thông qua làm trơn ảnh bằng nhân Gaussian:
 \[
-L(x,y,\sigma)=G(x,y,\sigma)*I(x,y),
+L(x,y,\sigma)=G(x,y,\sigma)*I(x,y)
 \]
-trong đó nhân Gaussian được viết là:
+Ảnh sai khác Gaussian (\textit{Difference of Gaussians - DoG}) được sử dụng để tìm kiếm các điểm cực trị:
 \[
-G(x,y,\sigma)=\frac{1}{2\pi\sigma^2}\exp\!\left(-\frac{x^2+y^2}{2\sigma^2}\right).
+D(x,y,\sigma)=L(x,y,k\sigma)-L(x,y,\sigma)
 \]
-Ảnh sai khác Gaussian (Difference of Gaussians) giữa hai mức tỉ lệ liên tiếp là:
-\[
-D(x,y,\sigma)=L(x,y,k\sigma)-L(x,y,\sigma).
-\]
+Tại mỗi điểm cực trị được xác định, vùng lân cận phân chia thành một lưới $4\times 4$. Mỗi ô chứa một lược đồ gradient 8 hướng, tạo thành một vector đặc trưng $s_j \in \mathbb{R}^{128}$. 
 
-Toán tử DoG được dùng để xấp xỉ Laplacian của Gaussian (LoG):
-\[
-\nabla^2 I = \frac{\partial^2 I}{\partial x^2} + \frac{\partial^2 I}{\partial y^2}.
-\]
-Cụ thể, DoG $D(x,y,\sigma)$ xấp xỉ $\sigma^2 \nabla^2 G(x,y,\sigma)*I(x,y)$ với độ chính xác cao, nhưng tính toán nhanh hơn nhiều. Do đó, tìm cực trị trên DoG sẽ xác định điểm ổn định theo lý thuyết của LoG, nhưng với chi phí tính toán thấp hơn.
+Vì số lượng điểm đặc trưng SIFT sinh ra khác nhau trên mỗi ảnh, tập hợp vector này cần được lượng hoá về số chiều cố định trước khi đưa vào mô hình học máy.
 
-Sau khi định vị keypoint, gradient cục bộ tại vùng lân cận được tính bởi:
-\[
-G_x = I * \nabla_x, \qquad G_y = I * \nabla_y,
-\]
-\[
-m(x,y)=\sqrt{G_x^2+G_y^2}, \qquad
-\theta(x,y)=\tan^{-1}\!\left(\dfrac{G_y}{G_x}\right).
-\]
-Vùng xung quanh keypoint được chia thành lưới $4\times 4$ ô, mỗi ô tạo một histogram gồm 8 hướng. Ghép 16 histogram này lại sẽ thu được descriptor 128 chiều.
-Về số chiều, $L(\cdot,\cdot,\sigma),D(\cdot,\cdot,\sigma)\in\mathbb{R}^{H\times W}$ và mỗi descriptor cục bộ $s_j\in\mathbb{R}^{128}$; sau bước gom/pooling về độ dài cố định, đặc trưng đầu vào mô hình hồi quy được ký hiệu $x_{\mathrm{SIFT}}\in\mathbb{R}^{d_{\mathrm{SIFT}}}$.
+\section{Mô hình Gaussian Mixture và Túi từ vựng thị giác}
+Để chuẩn hoá đầu vào từ các bộ mô tả SIFT cục bộ, phương pháp túi từ vựng thị giác (\textit{Bag of Visual Words - BoVW}) được sử dụng. Trong nghiên cứu này, mô hình hỗn hợp Gauss (\textit{Gaussian Mixture Model - GMM}) được áp dụng để gom cụm các đặc trưng thành một từ điển, cho phép lượng hoá theo phân bố xác suất.
 
-SIFT có tính bất biến tương đối đối với thay đổi tỉ lệ và phép quay, đồng thời ổn định một phần trước biến thiên chiếu sáng. Trong bài toán ảnh khuôn mặt, SIFT có thể được sử dụng để phát hiện các điểm đặc trưng như mắt, mũi, miệng hoặc các vùng có độ biến thiên cao. Tuy nhiên, việc trích xuất SIFT thường có chi phí tính toán cao hơn HOG và LBP, đồng thời số lượng điểm đặc trưng có thể thay đổi giữa các ảnh, gây khó khăn khi xây dựng biểu diễn cố định cho mô hình hồi quy.
+GMM xấp xỉ phân bố dữ liệu bằng tổng của $K$ thành phần phân bố Gauss:
+\[
+p(x|\theta) = \sum_{k=1}^K \pi_k \mathcal{N}(x|\mu_k, \Sigma_k)
+\]
+Trong đó $\pi_k$, $\mu_k$, $\Sigma_k$ lần lượt là trọng số, giá trị trung bình và ma trận hiệp phương sai của thành phần thứ $k$. Các tham số này được ước lượng bằng thuật toán kỳ vọng - cực đại (\textit{Expectation-Maximization - EM}). 
+
+Khi GMM đã được huấn luyện, mỗi vector SIFT trong một ảnh được tính toán xác suất thuộc về $K$ cụm. Bằng cách cộng dồn xác suất của tất cả vector SIFT, ảnh được biểu diễn thành một lược đồ tần suất có kích thước cố định là $K$. Đây là vector đặc trưng toàn cục của ảnh.
 
 \section{Giảm chiều dữ liệu}
-Sau khi trích xuất đặc trưng, vector đặc trưng thường có số chiều lớn và chứa nhiều thành phần dư thừa. Giảm chiều dữ liệu giúp rút gọn không gian đặc trưng, giảm chi phí tính toán và có thể cải thiện khả năng tổng quát hoá của mô hình.
-
 \subsection{Principal Component Analysis (PCA)}
-Principal Component Analysis là phương pháp giảm chiều tuyến tính bằng cách tìm các trục mới sao cho dữ liệu được biểu diễn với phương sai lớn nhất trên các trục đầu tiên. PCA biến đổi vector đặc trưng ban đầu sang một không gian mới gồm các thành phần chính, trong đó mỗi thành phần là một tổ hợp tuyến tính của các biến gốc.
+Phân tích thành phần chính (\textit{Principal Component Analysis - PCA}) \cite{Jolliffe2002PCA} là kỹ thuật biến đổi tuyến tính để chuyển dữ liệu sang một không gian toạ độ mới, sao cho phương sai của dữ liệu trên các trục mới là lớn nhất.
 
-Với ma trận dữ liệu đã chuẩn hoá trung bình $X \in \mathbb{R}^{n\times d}$, ma trận hiệp phương sai:
+Với ma trận dữ liệu đã chuẩn hóa trung bình $X \in \mathbb{R}^{n\times d}$, ma trận hiệp phương sai là:
 \[
-C = \frac{1}{n-1}X^\top X.
+C = \frac{1}{n-1}X^\top X
 \]
-Các thành phần chính thu được từ bài toán trị riêng:
+Thành phần chính được xác định qua bài toán trị riêng:
 \[
-Cu_i = \lambda_i u_i, \quad \lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_d.
+Cu_i = \lambda_i u_i, \quad \lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_d
 \]
-Giữ $k$ vector riêng đầu tiên $U_k=[u_1,\dots,u_k]$, phép chiếu đặc trưng là:
+Sử dụng ma trận chiếu $U_k \in \mathbb{R}^{d\times k}$ chứa $k$ vector riêng lớn nhất, dữ liệu được giảm chiều bằng công thức:
 \[
-z = U_k^\top (x-\mu).
+z = U_k^\top x
 \]
-Trong đó $x,\mu\in\mathbb{R}^{d}$, $U_k\in\mathbb{R}^{d\times k}$ và $z\in\mathbb{R}^{k}$.
-Nội dung nền tảng và cách chọn số thành phần chính được trình bày trong \cite{Jolliffe2002PCA}.
-
-Trong thực tế, PCA thường được dùng để nén dữ liệu đặc trưng trước khi đưa vào mô hình hồi quy. Lợi ích của PCA là giảm số chiều, loại bỏ một phần nhiễu và giảm hiện tượng đa cộng tuyến giữa các biến. Tuy nhiên, PCA có hạn chế là làm mất một phần thông tin gốc và chỉ phù hợp với các quan hệ tuyến tính.
+PCA giúp rút gọn số chiều của không gian đặc trưng, loại bỏ tương quan tuyến tính giữa các biến và giảm khối lượng tính toán cho mô hình hồi quy.
 
 \section{Các mô hình hồi quy}
-Sau khi có đặc trưng ảnh, bài toán ước lượng tuổi được mô hình hoá như một bài toán hồi quy, trong đó đầu ra là một giá trị liên tục. Các mô hình hồi quy được sử dụng để học mối quan hệ giữa đặc trưng khuôn mặt và tuổi thực.
-
 \subsection{Support Vector Regression (SVR)}
-Support Vector Regression là biến thể của Support Vector Machine dùng cho bài toán hồi quy. SVR cố gắng tìm một hàm dự đoán sao cho sai số nằm trong một ngưỡng cho phép, đồng thời vẫn giữ cho mô hình đơn giản nhất có thể.
+Hồi quy vector hỗ trợ (\textit{Support Vector Regression - SVR}) \cite{Drucker1997SVR} là thuật toán áp dụng nguyên lý của \textit{Support Vector Machine - SVM} cho bài toán dự đoán giá trị liên tục. $\varepsilon$-SVR thiết lập một dải băng sai số $\varepsilon$ xung quanh hàm dự đoán; các điểm dữ liệu nằm trong dải băng này bị bỏ qua, hệ thống chỉ phạt sai số của các điểm nằm ngoài.
 
-Dạng tối ưu hoá chuẩn của $\varepsilon$-SVR:
+Bài toán tối ưu chuẩn của SVR được phát biểu:
 \[
 \min_{w,b,\xi,\xi^*} \frac{1}{2}\lVert w\rVert^2 + C\sum_{i=1}^{n}(\xi_i+\xi_i^*)
 \]
-với các ràng buộc
+với các ràng buộc:
 \[
 \begin{aligned}
 y_i - (w^\top\phi(x_i)+b) &\le \varepsilon + \xi_i,\\
@@ -152,77 +377,70 @@ y_i - (w^\top\phi(x_i)+b) &\le \varepsilon + \xi_i,\\
 \xi_i,\xi_i^* &\ge 0.
 \end{aligned}
 \]
-Trong không gian kernel, hàm dự đoán:
-\[
-f(x)=\sum_{i=1}^{n}(\alpha_i-\alpha_i^*)K(x_i,x)+b.
-\]
-Về số chiều, mỗi mẫu đặc trưng $x_i\in\mathbb{R}^{d}$, đầu ra $y_i\in\mathbb{R}$, vector tham số tuyến tính $w\in\mathbb{R}^{d_\phi}$ trong không gian đặc trưng $\phi(x)\in\mathbb{R}^{d_\phi}$.
-Các kết quả gốc về SVR và bài toán hồi quy SVM được trình bày trong \cite{Drucker1997SVR}.
-
-SVR hoạt động hiệu quả trên dữ liệu có số chiều vừa phải và có thể kết hợp với các hàm kernel để mô hình hoá quan hệ phi tuyến. Trong bài toán ước lượng tuổi, SVR thường được xem như một mô hình tham chiếu do khả năng làm việc tốt với vector đặc trưng đã trích xuất. Tuy nhiên, SVR có thể khó mở rộng khi dữ liệu quá lớn.
+SVR sử dụng hàm nhân (kernel) để ánh xạ đặc trưng ngầm định $\phi(x_i)$ lên không gian nhiều chiều hơn, từ đó xử lý các mối quan hệ phi tuyến.
 
 \subsection{Random Forest}
-Random Forest là mô hình tổ hợp gồm nhiều cây quyết định được huấn luyện trên các tập con khác nhau của dữ liệu và đặc trưng. Với bài toán hồi quy, đầu ra của Random Forest là giá trị trung bình từ các cây thành phần.
+Rừng ngẫu nhiên (\textit{Random Forest - RF}) \cite{Breiman2001RF} là một mô hình tổ hợp gồm nhiều cây quyết định. Trong bài toán hồi quy, kết quả đầu ra là giá trị trung bình cộng của các dự đoán từ tất cả các cây thành phần.
 
-Nếu rừng có $T$ cây hồi quy $f_t(x)$, dự đoán cuối cùng là:
+Với rừng gồm $T$ cây quyết định $f_t(x)$, hàm dự đoán tổng thể là:
 \[
-\hat{y}(x)=\frac{1}{T}\sum_{t=1}^{T} f_t(x).
+\hat{y}(x)=\frac{1}{T}\sum_{t=1}^{T} f_t(x)
 \]
-Mỗi cây thường được học từ bootstrap sample và tách nhánh theo tiêu chí giảm phương sai (hoặc MSE), ví dụ:
-\[
-\mathrm{MSE}(S)=\frac{1}{|S|}\sum_{(x_i,y_i)\in S}(y_i-\bar{y}_S)^2.
-\]
-Về số chiều, $x\in\mathbb{R}^{d}$, $y\in\mathbb{R}$ và mỗi cây hồi quy là ánh xạ $f_t:\mathbb{R}^{d}\to\mathbb{R}$.
-Kết hợp bagging và lựa chọn ngẫu nhiên tập con đặc trưng giúp giảm phương sai và tăng khả năng tổng quát hoá của mô hình \cite{Breiman2001RF}.
-
-Random Forest có tính ổn định cao hơn một cây quyết định đơn lẻ, ít bị quá khớp và có khả năng xử lý quan hệ phi tuyến giữa đặc trưng và đầu ra. Tuy vậy, mô hình này có thể không khai thác đầy đủ cấu trúc phức tạp trong dữ liệu ảnh và phụ thuộc nhiều vào chất lượng đặc trưng đầu vào.
+Mô hình chọn ngẫu nhiên tập dữ liệu huấn luyện (Bootstrapping) và tập đặc trưng tại mỗi nút phân nhánh. Kỹ thuật này làm giảm sự phụ thuộc lẫn nhau giữa các cây, qua đó làm giảm phương sai của mô hình dự đoán mà không làm tăng độ lệch.
 
 \subsection{Multi-Layer Perceptron Regression}
-Multi-Layer Perceptron Regression là mô hình mạng nơ-ron nhiều lớp được sử dụng cho bài toán dự đoán giá trị liên tục. Mô hình gồm các lớp ẩn với hàm kích hoạt phi tuyến và một lớp đầu ra cho giá trị hồi quy.
+Mạng nơ-ron truyền thẳng đa lớp (\textit{Multi-Layer Perceptron - MLP}) \cite{Bishop1995NN} là mạng nơ-ron nhân tạo gồm lớp đầu vào, các lớp ẩn và lớp đầu ra. Bằng cách áp dụng các hàm kích hoạt phi tuyến, MLP có khả năng biểu diễn các hàm mục tiêu có cấu trúc phức tạp.
 
-Đặt $a^{(0)}=x\in\mathbb{R}^{d_0}$, với mỗi lớp $\ell$ có $W^{(\ell)}\in\mathbb{R}^{d_\ell\times d_{\ell-1}}$, $b^{(\ell)}\in\mathbb{R}^{d_\ell}$, và $f^{(\ell)},a^{(\ell)},\delta^{(\ell)}\in\mathbb{R}^{d_\ell}$. Ở đầu ra hồi quy một biến, $\hat{y},y\in\mathbb{R}$.
-
-\textbf{Feedforward}
+Quá trình tính toán xuôi (Feedforward) qua $L$ lớp được định nghĩa:
 \[
 \begin{aligned}
 f^{(\ell)}(x) &:= W^{(\ell)}a^{(\ell-1)} + b^{(\ell)}, \\
 a^{(\ell)} &:= \max\!\left(0, f^{(\ell)}(x)\right), \qquad \ell=1,\dots,L-1, \\
-f^{(L)}(x) &:= W^{(L)}a^{(L-1)} + b^{(L)}, \\
-\hat{y} &:= f^{(L)}(x).
+\hat{y} &:= W^{(L)}a^{(L-1)} + b^{(L)}.
 \end{aligned}
 \]
-
-\textbf{Hàm mất mát}
+Mô hình tối ưu hoá tham số bằng thuật toán lan truyền ngược (Backpropagation) để cực tiểu hoá hàm mất mát, thường sử dụng lỗi bình phương trung bình (\textit{Mean Squared Error - MSE}):
 \[
-\mathcal{L}_{\mathrm{MSE}} := \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2.
+\mathcal{L}_{\mathrm{MSE}} := \frac{1}{n}\sum_{i=1}^{n}(y_i-\hat{y}_i)^2
 \]
 
-\textbf{Backpropagation}
-\[
-\begin{aligned}
-\delta^{(L)}
-&:= \frac{\partial \mathcal{L}}{\partial f^{(L)}} = \frac{2}{n}(\hat{y}-y), \\
-\delta^{(\ell)}
-&:= \frac{\partial \mathcal{L}}{\partial f^{(\ell)}}
-= \left(W^{(\ell+1)}\right)^\top \delta^{(\ell+1)} \odot \mathbf{1}_{f^{(\ell)}>0},
-\quad \ell=L-1,\dots,1, \\
-\frac{\partial \mathcal{L}}{\partial W^{(\ell)}}
-&:= \delta^{(\ell)}\left(a^{(\ell-1)}\right)^\top, \\
-\frac{\partial \mathcal{L}}{\partial b^{(\ell)}}
-&:= \delta^{(\ell)}.
-\end{aligned}
-\]
+\subsection{Convolutional Neural Network (CNN)}
+Mạng nơ-ron tích chập (\textit{Convolutional Neural Network - CNN}) là một cấu trúc kiến trúc học sâu được thiết kế chuyên biệt cho dữ liệu dạng lưới không gian như hình ảnh. Khác với các mô hình mạng nơ-ron truyền thẳng yêu cầu vector hoá dữ liệu đầu vào làm mất mát quan hệ ngữ cảnh lân cận, CNN duy trì cấu trúc không gian nhờ vào các phép toán tích chập cục bộ.
 
-\textbf{Cập nhật tham số}
-\[
-\begin{aligned}
-W^{(\ell)} &:= W^{(\ell)} - \eta\frac{\partial \mathcal{L}}{\partial W^{(\ell)}}, \\
-b^{(\ell)} &:= b^{(\ell)} - \eta\frac{\partial \mathcal{L}}{\partial b^{(\ell)}}.
-\end{aligned}
-\]
-Trình bày nền tảng về MLP và huấn luyện mạng nơ-ron có thể xem trong \cite{Bishop1995NN}.
+\textbf{Lớp tích chập (Convolutional Layer):} Thực hiện trích xuất đặc trưng tự động bằng các phép tích chập giữa bản đồ đặc trưng đầu vào $I$ và các bộ lọc $K$ (\textit{Kernel}) kích thước nhỏ. Đặc trưng tại toạ độ $(i,j)$ trên bản đồ đặc trưng đầu ra $S$ được mô tả bằng biểu thức toán học:
+$$
+S(i,j) = (I * K)(i,j) = \sum_m \sum_n I(i+m, j+n) K(m,n)
+$$
 
-MLP Regression có khả năng học các quan hệ phi tuyến giữa đặc trưng khuôn mặt và tuổi, đặc biệt khi đầu vào đã được rút gọn và chuẩn hoá tốt. Mô hình này linh hoạt hơn các phương pháp tuyến tính nhưng cần điều chỉnh số lớp, số nút và tham số huấn luyện để tránh quá khớp.
+\textbf{Chuẩn hóa theo lô (\textit{Batch Normalization - BN}):} Kỹ thuật này được áp dụng ngay sau phép tích chập nhằm hạn chế sự dịch chuyển đồng biến nội bộ (\textit{Internal Covariate Shift}), qua đó làm ổn định hệ thống và tăng tốc độ hội tụ. Giá trị kích hoạt $x$ trên một lô dữ liệu nhỏ được chuẩn hóa theo công thức:
+$$
+\hat{x} = \frac{x - \mu_{\mathcal{B}}}{\sqrt{\sigma_{\mathcal{B}}^2 + \epsilon}}
+$$
+Trong đó $\mu_{\mathcal{B}}$ và $\sigma_{\mathcal{B}}^2$ lần lượt là giá trị trung bình và phương sai tính toán trên lô dữ liệu hiện tại.
+
+\textbf{Lớp tổng hợp trung bình toàn cục (\textit{Global Average Pooling - GAP}):} Thay vì sử dụng lớp làm phẳng (\textit{Flatten}) truyền thống vốn làm bùng nổ số lượng tham số liên kết, lớp GAP tiến hành thu gọn kích thước bằng cách lấy giá trị trung bình trên toàn bộ không gian hai chiều của mỗi bản đồ đặc trưng. Đối với một bản đồ đặc trưng thứ $k$ kích thước $H \times W$, giá trị đầu ra được tính toán theo biểu thức:
+$$
+y_k = \frac{1}{H \times W} \sum_{i=1}^H \sum_{j=1}^W x_k(i,j)
+$$
+Đầu ra của toán tử GAP được đưa trực tiếp vào lớp kết nối đầy đủ (\textit{Fully Connected Layer}) cuối cùng nhằm thực hiện phép hồi quy tuyến tính ra một giá trị tuổi liên tục.
+
+\section{Các độ đo đánh giá mô hình}
+Để định lượng mức độ sai số và hiệu năng dự đoán giữa giá trị độ tuổi ước lượng từ mô hình và giá trị tuổi thực tế, nghiên cứu áp dụng ba độ đo hồi quy tiêu chuẩn. Giả sử tập dữ liệu kiểm thử có tổng số $N$ mẫu hình ảnh, $y_i$ biểu diễn tuổi thực tế, $\hat{y}_i$ biểu diễn giá trị tuổi do mô hình dự đoán, và $\bar{y}$ là giá trị tuổi trung bình của tập kiểm thử.
+
+\textbf{Sai số tuyệt đối trung bình (\textit{Mean Absolute Error - MAE}):} Độ đo này phản ánh giá trị trung bình số học của tổng các sai lệch tuyệt đối giữa giá trị thực tế và giá trị dự đoán:
+$$
+MAE = \frac{1}{N} \sum_{i=1}^N |y_i - \hat{y}_i|
+$$
+
+\textbf{Căn bậc hai sai số bình phương trung bình (\textit{Root Mean Squared Error - RMSE}):} Độ đo này thực hiện phạt nặng các mẫu dữ liệu có sai số dự đoán lớn do cơ chế bình phương hiệu số trước khi lấy trung bình và khai căn:
+$$
+RMSE = \sqrt{\frac{1}{N} \sum_{i=1}^N (y_i - \hat{y}_i)^2}
+$$
+
+\textbf{Hệ số xác định ($R^2$):} Độ đo thống kê đánh giá tỷ lệ phương sai của nhãn tuổi thực tế được giải thích thành công bởi mô hình hồi quy:
+$$
+R^2 = 1 - \frac{\sum_{i=1}^N (y_i - \hat{y}_i)^2}{\sum_{i=1}^N (y_i - \bar{y})^2}
+$$
 
 \section{Tổng kết chương}
-Các phương pháp trích xuất đặc trưng như HOG, LBP và SIFT giúp chuyển đổi ảnh khuôn mặt sang dạng biểu diễn phù hợp hơn cho mô hình học máy. PCA hỗ trợ giảm chiều và nén thông tin, còn các mô hình hồi quy như SVR, Random Forest và MLP Regression là những lựa chọn phổ biến để dự đoán tuổi từ đặc trưng đã rút trích. Đây là cơ sở để xây dựng và so sánh các phương pháp trong những chương tiếp theo.
+Chương này đã hệ thống hoá toàn diện chu trình xử lý đặc trưng hình ảnh cho bài toán ước lượng tuổi. Nội dung bao gồm các phương pháp trích xuất đặc trưng hình ảnh (HOG, LBP, SIFT), kỹ thuật chuẩn hoá kích thước vector bằng mô hình hỗn hợp Gauss, phương pháp nén dữ liệu PCA và các mô hình học máy (SVR, RF, MLP, CNN). Các phương pháp này là cơ sở trực tiếp để triển khai thực nghiệm và đánh giá hệ thống trong các chương tiếp theo.

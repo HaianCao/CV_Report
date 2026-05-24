@@ -1,23 +1,54 @@
+% % !TeX root = ../Main.tex
+% \chapter{Kết luận và Hướng phát triển}
+
+% \section{Kết luận}
+% Tiểu luận này đã hoàn thành mục tiêu nghiên cứu và xây dựng quy trình hồi quy tuổi từ ảnh khuôn mặt. Dựa trên tập dữ liệu chuẩn UTKFace, nhóm đã thực hiện đánh giá toàn diện từ khâu phân tích, tiền xử lý dữ liệu đến trích xuất đặc trưng và tối ưu hóa mô hình học máy. Một số kết luận chính được rút ra như sau:
+
+% \begin{itemize}
+% 	\item \textbf{Hiệu quả của phương pháp trích xuất đặc trưng:} Đặc trưng định hướng gradient (HOG) tỏ ra vượt trội so với LBP và SIFT trong việc nắm bắt cấu trúc hình thái khuôn mặt để dự đoán độ tuổi. Khi kết hợp HOG với mạng nơ-ron đa tầng (MLP), mô hình đạt hiệu năng cao nhất với sai số tuyệt đối trung bình (MAE) là 6.85 tuổi.
+% 	\item \textbf{Ảnh hưởng của mất cân bằng dữ liệu:} Phân tích lỗi chi tiết cho thấy mô hình hoạt động hiệu quả trên nhóm người trưởng thành trẻ tuổi và giới tính cân bằng. Tuy nhiên, sai số dự đoán tăng mạnh đối với nhóm người cao tuổi (đặc biệt trên 80 tuổi) và các chủng tộc thiểu số (như Black, Others). Nguyên nhân chính là do sự thiếu hụt mẫu huấn luyện và độ phân tán lớn của đặc điểm lão hóa ở các nhóm này.
+% 	\item \textbf{Tác động của giảm chiều dữ liệu (PCA):} Phương pháp PCA đóng vai trò quan trọng trong việc loại bỏ nhiễu và giảm thời gian tính toán đối với mô hình SVR (khi giảm xuống 40 chiều, RMSE của SVR giảm từ 12.65 xuống 12.22). Ngược lại, đối với mạng MLP có khả năng tự động học các biểu diễn phức tạp, việc nén dữ liệu bằng phép chiếu tuyến tính như PCA làm suy giảm thông tin và giảm độ chính xác tổng thể so với dữ liệu gốc.
+% \end{itemize}
+
+% Nhìn chung, mô hình HOG kết hợp MLP là một giải pháp khá tốt, có tốc độ huấn luyện nhanh và mang lại độ chính xác khả quan đối với dữ liệu thực tế. Tuy nhiên, những hạn chế khi đối diện với nhóm đối tượng thiểu số vẫn là một thách thức lớn cần giải quyết.
+
+% \section{Hướng phát triển}
+% Từ những kết quả và hạn chế đã được thảo luận, một số hướng phát triển tiềm năng trong tương lai để cải thiện độ chính xác và tính bền vững của mô hình bao gồm:
+
+% \begin{itemize}
+% 	\item \textbf{Khắc phục vấn đề mất cân bằng dữ liệu:} Áp dụng các kỹ thuật tăng cường dữ liệu, SMOTE hoặc GANs để bổ sung mẫu khuôn mặt cho nhóm người cao tuổi và các chủng tộc thiểu số. Bên cạnh đó, có thể thiết kế lại hàm mất mát bằng cách gán trọng số cao hơn cho các nhóm dữ liệu có tần suất xuất hiện thấp để mô hình tập trung tối ưu cho các nhóm này.
+% 	\item \textbf{Sử dụng Deep Learning:} Thay vì dựa vào các đặc trưng thiết kế thủ công như HOG, nghiên cứu trong tương lai có thể sử dụng các mạng nơ-ron tích chập (CNN) sâu đã được huấn luyện trước trên tập dữ liệu khuôn mặt quy mô lớn (như VGGFace, ResNet) để tự động trích xuất các đặc trưng biểu diễn mức cao phong phú hơn.
+% 	\item \textbf{Chuyển đổi cách tiếp cận bài toán:} Khai thác bài toán dự đoán tuổi dưới dạng phân loại thứ tự (Ordinal Regression) hoặc dự đoán một phân bố xác suất tuổi (Label Distribution Learning) thay vì chỉ hồi quy ra một giá trị điểm duy nhất. Các phương pháp này đã được các nghiên cứu chứng minh là phản ánh tốt hơn tính chất thay đổi liên tục của quá trình lão hóa.
+% 	\item \textbf{Đánh giá chéo trên nhiều bộ dữ liệu:} Mở rộng việc kiểm thử mô hình trên các bộ dữ liệu đa dạng hơn ngoài UTKFace (như MORPH-II, FG-NET, v.v.) để kiểm chứng độ mạnh mẽ và khả năng tổng quát hóa trong các điều kiện chụp ảnh phức tạp như thiếu sáng, góc chụp nghiêng, hay bị che khuất.
+% \end{itemize}
+
 % !TeX root = ../Main.tex
 \chapter{Kết luận và Hướng phát triển}
 
 \section{Kết luận}
-Tiểu luận này đã hoàn thành mục tiêu nghiên cứu và xây dựng quy trình hồi quy tuổi từ ảnh khuôn mặt. Dựa trên tập dữ liệu chuẩn UTKFace, nhóm đã thực hiện đánh giá toàn diện từ khâu phân tích, tiền xử lý dữ liệu đến trích xuất đặc trưng và tối ưu hóa mô hình học máy. Một số kết luận chính được rút ra như sau:
+Nghiên cứu này đã hoàn thiện quy trình xây dựng hệ thống hồi quy độ tuổi từ ảnh khuôn mặt trên tập dữ liệu UTKFace. Thông qua thực nghiệm đánh giá quy mô lớn trên 33 cấu hình mô hình, bao gồm các phương pháp học máy truyền thống và học sâu, báo cáo đã ghi nhận các phát hiện sau:
 
 \begin{itemize}
-	\item \textbf{Hiệu quả của phương pháp trích xuất đặc trưng:} Đặc trưng định hướng gradient (HOG) tỏ ra vượt trội so với LBP và SIFT trong việc nắm bắt cấu trúc hình thái khuôn mặt để dự đoán độ tuổi. Khi kết hợp HOG với mạng nơ-ron đa tầng (MLP), mô hình đạt hiệu năng cao nhất với sai số tuyệt đối trung bình (MAE) là 6.85 tuổi.
-	\item \textbf{Ảnh hưởng của mất cân bằng dữ liệu:} Phân tích lỗi chi tiết cho thấy mô hình hoạt động hiệu quả trên nhóm người trưởng thành trẻ tuổi và giới tính cân bằng. Tuy nhiên, sai số dự đoán tăng mạnh đối với nhóm người cao tuổi (đặc biệt trên 80 tuổi) và các chủng tộc thiểu số (như Black, Others). Nguyên nhân chính là do sự thiếu hụt mẫu huấn luyện và độ phân tán lớn của đặc điểm lão hóa ở các nhóm này.
-	\item \textbf{Tác động của giảm chiều dữ liệu (PCA):} Phương pháp PCA đóng vai trò quan trọng trong việc loại bỏ nhiễu và giảm thời gian tính toán đối với mô hình SVR (khi giảm xuống 40 chiều, RMSE của SVR giảm từ 12.65 xuống 12.22). Ngược lại, đối với mạng MLP có khả năng tự động học các biểu diễn phức tạp, việc nén dữ liệu bằng phép chiếu tuyến tính như PCA làm suy giảm thông tin và giảm độ chính xác tổng thể so với dữ liệu gốc.
+    \item \textbf{Hiệu năng của đặc trưng HOG:} Tổ hợp đặc trưng định hướng gradient (HOG) kết hợp cùng mạng nơ-ron đa tầng (MLP) xác lập ngưỡng hiệu năng tiêu chuẩn ($MAE = 6.504, R^2 = 0.792$) trên dữ liệu ảnh gốc. Thực nghiệm chứng minh rằng HOG khai thác hiệu quả các cấu trúc biên và biến thiên gradient — những chỉ dấu sinh học bền vững của quá trình lão hóa — mà không bị nhiễu bởi các kỹ thuật tiền xử lý ảnh thông thường.
+    
+    \item \textbf{Giới hạn của tiền xử lý phân vùng:} Các chiến lược phân vùng khuôn mặt dựa trên không gian màu YCrCb và HSV không mang lại lợi ích cho bài toán hồi quy. Việc loại bỏ các pixel ngoài vùng da vô tình triệt tiêu các ngữ cảnh sinh lý quan trọng ở vùng rìa khuôn mặt (cấu trúc xương hàm, nếp nhăn vùng cổ, đường chân tóc), dẫn đến sự suy giảm hiệu năng có tính hệ thống trên toàn bộ các cấu hình thực nghiệm.
+
+    \item \textbf{Đặc tính học biểu diễn:} Kiến trúc CNN đạt hiệu năng tiệm cận với tổ hợp \texttt{MLP + HOG} và thể hiện khả năng tối ưu hóa cục bộ vượt trội tại phân khúc dữ liệu thanh niên (21-30 tuổi) với $MAE$ cực thấp (2.40). Tuy nhiên, khi áp dụng trên ảnh xám, mạng CNN bộc lộ thiên lệch giới tính lớn hơn so với MLP, do thiếu vắng các kênh màu hỗ trợ trong việc phân tách kết cấu bề mặt có độ tương phản thấp.
+
+    \item \textbf{Vai trò của giảm chiều dữ liệu (PCA):} Thực nghiệm khử nhiễu bằng PCA khẳng định tính hai mặt: Đối với thuật toán SVR, PCA là phương pháp thiết yếu để khử nhiễu và tối ưu hóa không gian lề ($R^2$ đạt đỉnh tại 40 chiều). Ngược lại, đối với kiến trúc MLP phi tuyến sâu, việc giảm chiều bằng phép chiếu tuyến tính gây ra tổn thất thông tin vi mô, làm suy giảm khả năng xấp xỉ hàm mục tiêu so với dữ liệu gốc 8100 chiều.
+
+    \item \textbf{Tính phổ quát của đặc trưng lão hóa:} Kết quả đối chiếu chiến lược huấn luyện khẳng định quá trình lão hóa mang tính phổ quát. Việc huấn luyện mô hình trên toàn bộ tập dữ liệu mang lại độ tin cậy và khả năng giải thích phương sai cao hơn hẳn so với việc huấn luyện riêng rẽ trên từng nhóm chủng tộc, khẳng định sức mạnh của các mô hình học biểu diễn tổng quát.
 \end{itemize}
 
-Nhìn chung, mô hình HOG kết hợp MLP là một giải pháp khá tốt, có tốc độ huấn luyện nhanh và mang lại độ chính xác khả quan đối với dữ liệu thực tế. Tuy nhiên, những hạn chế khi đối diện với nhóm đối tượng thiểu số vẫn là một thách thức lớn cần giải quyết.
-
 \section{Hướng phát triển}
-Từ những kết quả và hạn chế đã được thảo luận, một số hướng phát triển tiềm năng trong tương lai để cải thiện độ chính xác và tính bền vững của mô hình bao gồm:
+Dựa trên những phát hiện và giới hạn thực nghiệm, các hướng nghiên cứu tiềm năng trong tương lai bao gồm:
 
 \begin{itemize}
-	\item \textbf{Khắc phục vấn đề mất cân bằng dữ liệu:} Áp dụng các kỹ thuật tăng cường dữ liệu, SMOTE hoặc GANs để bổ sung mẫu khuôn mặt cho nhóm người cao tuổi và các chủng tộc thiểu số. Bên cạnh đó, có thể thiết kế lại hàm mất mát bằng cách gán trọng số cao hơn cho các nhóm dữ liệu có tần suất xuất hiện thấp để mô hình tập trung tối ưu cho các nhóm này.
-	\item \textbf{Sử dụng Deep Learning:} Thay vì dựa vào các đặc trưng thiết kế thủ công như HOG, nghiên cứu trong tương lai có thể sử dụng các mạng nơ-ron tích chập (CNN) sâu đã được huấn luyện trước trên tập dữ liệu khuôn mặt quy mô lớn (như VGGFace, ResNet) để tự động trích xuất các đặc trưng biểu diễn mức cao phong phú hơn.
-	\item \textbf{Chuyển đổi cách tiếp cận bài toán:} Khai thác bài toán dự đoán tuổi dưới dạng phân loại thứ tự (Ordinal Regression) hoặc dự đoán một phân bố xác suất tuổi (Label Distribution Learning) thay vì chỉ hồi quy ra một giá trị điểm duy nhất. Các phương pháp này đã được các nghiên cứu chứng minh là phản ánh tốt hơn tính chất thay đổi liên tục của quá trình lão hóa.
-	\item \textbf{Đánh giá chéo trên nhiều bộ dữ liệu:} Mở rộng việc kiểm thử mô hình trên các bộ dữ liệu đa dạng hơn ngoài UTKFace (như MORPH-II, FG-NET, v.v.) để kiểm chứng độ mạnh mẽ và khả năng tổng quát hóa trong các điều kiện chụp ảnh phức tạp như thiếu sáng, góc chụp nghiêng, hay bị che khuất.
+    \item \textbf{Khắc phục mất cân bằng dữ liệu:} Triển khai các chiến lược gán trọng số thích nghi (\textit{Adaptive Weighting}) trong hàm mất mát hoặc áp dụng các kỹ thuật sinh dữ liệu (như GANs/Diffusion Models) để bổ sung mẫu cho nhóm người cao tuổi và các chủng tộc thiểu số, nhằm giảm bớt sự gia tăng phương sai sai số ở các dải tuổi khắc nghiệt.
+    
+    \item \textbf{Chuyển đổi sang học phân phối nhãn (\textit{Label Distribution Learning}):} Thay thế cách tiếp cận hồi quy điểm đơn (\textit{Point-wise Regression}) bằng học phân phối nhãn. Phương pháp này mô tả quá trình lão hóa như một tiến trình liên tục, phù hợp hơn với bản chất mơ hồ của nhãn tuổi trong thực tế, từ đó cải thiện tính ổn định của dự đoán.
+    
+    \item \textbf{Kiến trúc học sâu tích hợp cơ chế chú ý (\textit{Attention Mechanism}):} Phát triển các cấu trúc mạng tích chập kết hợp cơ chế chú ý để mô hình có khả năng tự động tập trung vào các vùng "lão hóa trọng yếu" (như mắt, miệng, xương hàm) thay vì xử lý dàn trải, nhằm tăng cường độ chính xác cho các nhóm đối tượng có điều kiện chụp ảnh phức tạp.
+    
+    \item \textbf{Đánh giá khả năng tổng quát hóa (\textit{Transferability}):} Kiểm thử mô hình trên các tập dữ liệu đa dạng hơn (MORPH-II, FG-NET) để xác định ngưỡng bão hòa của các biểu diễn đặc trưng HOG và CNN trong các điều kiện môi trường thực tế không kiểm soát.
 \end{itemize}

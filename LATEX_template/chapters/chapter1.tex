@@ -1,26 +1,66 @@
+% % !TeX root = ../Main.tex
+% \chapter{Mở đầu}
+% \section{Đặt vấn đề}
+% Hồi quy tuổi từ khuôn mặt là một bài toán quan trọng trong thị giác máy tính vì nó hỗ trợ nhiều ứng dụng thực tế như quảng cáo theo độ tuổi, phân tích nhân khẩu học, kiểm soát truy cập và cá nhân hoá trải nghiệm người dùng. Một số hướng tiếp cận trong tài liệu cho thấy việc dự đoán tuổi từ ảnh khuôn mặt là khả thi, nhưng vẫn còn khó khăn do sự thay đổi về biểu cảm, góc chụp, ánh sáng và khác biệt cá nhân trong quá trình lão hoá \cite{Rothe2015DEX,Zhang2017AgeProgression}.
+
+% Việc xây dựng mô hình hồi quy tuổi chính xác đòi hỏi trích xuất đặc trưng khuôn mặt phù hợp và thiết kế mô hình có khả năng biểu diễn mối quan hệ phi tuyến giữa đặc trưng và tuổi thực. Ngoài ra, dữ liệu huấn luyện thường bị lệch theo phân bố tuổi hoặc chứa nhãn không hoàn toàn chính xác, khiến khả năng tổng quát hoá của mô hình bị ảnh hưởng đáng kể \cite{Levi2015AgeGender,Rothe2015DEX}.
+% \section{Giới thiệu bài toán}
+% Đề tài này là xây dựng một phương pháp ước lượng tuổi dựa trên ảnh khuôn mặt, với đầu ra là một giá trị tuổi liên tục. Dữ liệu đầu vào là ảnh khuôn mặt đã được tiền xử lý, còn đầu ra cần phản ánh tuổi thực của từng cá nhân thay vì chỉ phân loại theo các nhóm tuổi rời rạc.
+
+% Yêu cầu chính của bài toán là bảo đảm phương pháp dự đoán ổn định trước các biến đổi về góc chụp, biểu cảm, ánh sáng và sự khác biệt giữa các cá nhân. Đồng thời, kết quả cần được đánh giá bằng các thước đo định lượng cụ thể để xác định mức độ sai lệch giữa tuổi dự đoán và tuổi thật.
+
+% Bài toán này có ý nghĩa thực tiễn trong nhiều ứng dụng thị giác máy tính và phân tích người dùng, đồng thời đòi hỏi xem xét độ tin cậy, tính công bằng và quyền riêng tư khi sử dụng dữ liệu khuôn mặt.
+% \section{Mục tiêu}
+% Mục tiêu tổng quát của đề tài là xây dựng một giải pháp ước lượng tuổi từ ảnh khuôn mặt và đánh giá khả năng tổng quát hoá của nó trên nhiều điều kiện chụp khác nhau.
+
+% Mục tiêu cụ thể:
+% \begin{itemize}
+% 	\item Thiết kế quy trình tiền xử lý và trích xuất thông tin khuôn mặt phù hợp cho nhiệm vụ ước lượng tuổi.
+% 	\item Xây dựng mô hình dự đoán tuổi liên tục và lựa chọn tiêu chí đánh giá phù hợp cho bài toán hồi quy.
+% 	\item Lựa chọn và chuẩn hoá bộ dữ liệu phù hợp cho bài toán ước lượng tuổi.
+% 	\item Đánh giá phương pháp bằng các chỉ số như MAE (Mean Absolute Error) và RMSE trên các bộ dữ liệu chuẩn.
+% 	\item Thảo luận hạn chế của phương pháp.
+% \end{itemize}
+
+% \section{Tổng kết chương}
+% Chương mở đầu đã trình bày tổng quan về bài toán hồi quy tuổi từ ảnh khuôn mặt, bao gồm bối cảnh thực tế và các khó khăn gặp phải. Từ đó, mục tiêu của đề tài được xác định rõ ràng là xây dựng một hệ thống hoàn chỉnh từ tiền xử lý, trích xuất đặc trưng đến thiết kế mô hình học máy để dự đoán tuổi. Những mục tiêu này là định hướng quan trọng để tiến hành các bước nghiên cứu và thực nghiệm ở các chương tiếp theo.
+
 % !TeX root = ../Main.tex
 \chapter{Mở đầu}
+
 \section{Đặt vấn đề}
-Hồi quy tuổi từ khuôn mặt là một bài toán quan trọng trong thị giác máy tính vì nó hỗ trợ nhiều ứng dụng thực tế như quảng cáo theo độ tuổi, phân tích nhân khẩu học, kiểm soát truy cập và cá nhân hoá trải nghiệm người dùng. Một số hướng tiếp cận trong tài liệu cho thấy việc dự đoán tuổi từ ảnh khuôn mặt là khả thi, nhưng vẫn còn khó khăn do sự thay đổi về biểu cảm, góc chụp, ánh sáng và khác biệt cá nhân trong quá trình lão hoá \cite{Rothe2015DEX,Zhang2017AgeProgression}.
+Hồi quy tuổi từ khuôn mặt là một bài toán nền tảng mang tính thách thức cao trong lĩnh vực thị giác máy tính. Nhiệm vụ này đóng vai trò cốt lõi trong nhiều ứng dụng thực tiễn như hệ thống khuyến nghị quảng cáo theo độ tuổi, phân tích nhân khẩu học thông minh, kiểm soát truy cập an ninh và cá nhân hoá trải nghiệm người dùng. 
 
-Việc xây dựng mô hình hồi quy tuổi chính xác đòi hỏi trích xuất đặc trưng khuôn mặt phù hợp và thiết kế mô hình có khả năng biểu diễn mối quan hệ phi tuyến giữa đặc trưng và tuổi thực. Ngoài ra, dữ liệu huấn luyện thường bị lệch theo phân bố tuổi hoặc chứa nhãn không hoàn toàn chính xác, khiến khả năng tổng quát hoá của mô hình bị ảnh hưởng đáng kể \cite{Levi2015AgeGender,Rothe2015DEX}.
-\section{Giới thiệu bài toán}
-Đề tài này là xây dựng một phương pháp ước lượng tuổi dựa trên ảnh khuôn mặt, với đầu ra là một giá trị tuổi liên tục. Dữ liệu đầu vào là ảnh khuôn mặt đã được tiền xử lý, còn đầu ra cần phản ánh tuổi thực của từng cá nhân thay vì chỉ phân loại theo các nhóm tuổi rời rạc.
+Các nghiên cứu trước đây cho thấy việc khai phá thông tin độ tuổi từ ảnh khuôn mặt là hoàn toàn khả thi, tuy nhiên độ chính xác vẫn bị giới hạn bởi nhiều yếu tố nhiễu trong thế giới thực. Cụ thể, sự thay đổi đa dạng về biểu cảm, góc chụp, điều kiện chiếu sáng, cũng như sự khác biệt mang tính sinh học trong quá trình lão hoá của từng cá nhân tạo ra sự chồng chéo lớn về đặc trưng thị giác \cite{Rothe2015DEX,Zhang2017AgeProgression}.
 
-Yêu cầu chính của bài toán là bảo đảm phương pháp dự đoán ổn định trước các biến đổi về góc chụp, biểu cảm, ánh sáng và sự khác biệt giữa các cá nhân. Đồng thời, kết quả cần được đánh giá bằng các thước đo định lượng cụ thể để xác định mức độ sai lệch giữa tuổi dự đoán và tuổi thật.
+Việc xây dựng một mô hình hồi quy tuổi chính xác không chỉ đòi hỏi các kỹ thuật tiền xử lý và trích xuất đặc trưng khuôn mặt mạnh mẽ, mà còn yêu cầu thiết kế một kiến trúc mô hình có đủ khả năng biểu diễn các mối quan hệ phi tuyến phức tạp giữa đặc trưng trích xuất và tuổi thực. Thêm vào đó, các bộ dữ liệu huấn luyện thường đối mặt với vấn đề mất cân bằng phân bố tuổi hoặc chứa nhiễu nhãn, làm suy giảm đáng kể khả năng tổng quát hoá của mô hình trên dữ liệu thực tế \cite{Levi2015AgeGender,Rothe2015DEX}.
 
-Bài toán này có ý nghĩa thực tiễn trong nhiều ứng dụng thị giác máy tính và phân tích người dùng, đồng thời đòi hỏi xem xét độ tin cậy, tính công bằng và quyền riêng tư khi sử dụng dữ liệu khuôn mặt.
-\section{Mục tiêu}
-Mục tiêu tổng quát của đề tài là xây dựng một giải pháp ước lượng tuổi từ ảnh khuôn mặt và đánh giá khả năng tổng quát hoá của nó trên nhiều điều kiện chụp khác nhau.
+\section{Giới thiệu và Mô hình hoá bài toán}
+Đề tài này tập trung xây dựng một phương pháp ước lượng tuổi dựa trên ảnh khuôn mặt, tiếp cận dưới góc độ của bài toán hồi quy liên tục thay vì phân loại vào các nhóm tuổi rời rạc. 
 
-Mục tiêu cụ thể:
+Về mặt toán học, giả sử tập dữ liệu quan sát được ký hiệu là $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^N$, trong đó:
 \begin{itemize}
-	\item Thiết kế quy trình tiền xử lý và trích xuất thông tin khuôn mặt phù hợp cho nhiệm vụ ước lượng tuổi.
-	\item Xây dựng mô hình dự đoán tuổi liên tục và lựa chọn tiêu chí đánh giá phù hợp cho bài toán hồi quy.
-	\item Lựa chọn và chuẩn hoá bộ dữ liệu phù hợp cho bài toán ước lượng tuổi.
-	\item Đánh giá phương pháp bằng các chỉ số như MAE (Mean Absolute Error) và RMSE trên các bộ dữ liệu chuẩn.
-	\item Thảo luận hạn chế của phương pháp.
+    \item $N$ là tổng số mẫu dữ liệu (số lượng ảnh).
+    \item $x_i \in \mathcal{X} \subset \mathbb{R}^{H \times W \times C}$ là ma trận điểm ảnh biểu diễn khuôn mặt thứ $i$ đã qua tiền xử lý, với $H, W, C$ lần lượt là chiều cao, chiều rộng và số lượng kênh màu.
+    \item $y_i \in \mathcal{Y} \subset \mathbb{R}^+$ là nhãn tuổi thực tế mang giá trị thực dương tương ứng của $x_i$.
+\end{itemize}
+
+Mục tiêu cốt lõi của bài toán là tìm kiếm một hàm ánh xạ phi tuyến $f_\theta: \mathcal{X} \rightarrow \mathcal{Y}$, được tham số hoá bởi tập trọng số $\theta$, sao cho giá trị dự đoán $\hat{y}_i = f_\theta(x_i)$ xấp xỉ tốt nhất với giá trị thực $y_i$. Quá trình huấn luyện mô hình tương đương với việc giải bài toán tối ưu hoá nhằm cực tiểu hoá một hàm mất mát $\mathcal{L}$ trên toàn bộ tập dữ liệu:
+$$ \hat{\theta} = \arg\min_{\theta} \frac{1}{N} \sum_{i=1}^{N} \mathcal{L}(f_\theta(x_i), y_i) $$
+
+Yêu cầu kỹ thuật của bài toán là đảm bảo hàm $f_\theta$ có tính ổn định trước các biến đổi về môi trường và thông tin sinh lý cá nhân. Đồng thời, giải pháp cần xem xét tính khả thi khi triển khai, độ tin cậy của dữ liệu cũng như các vấn đề liên quan đến quyền riêng tư trong phân tích khuôn mặt.
+
+\section{Mục tiêu nghiên cứu}
+Mục tiêu tổng quát của đề tài là nghiên cứu, đề xuất một mô hình ước lượng tuổi từ ảnh khuôn mặt hoàn chỉnh; từ đó đánh giá khả năng tổng quát hoá của mô hình trên các điều kiện và đặc điểm nhân khẩu học khác nhau.
+
+Các mục tiêu cụ thể được xác định như sau:
+\begin{itemize}
+    \item Lựa chọn, phân tích thăm dò và chuẩn hoá bộ dữ liệu khuôn mặt quy mô lớn, giải quyết các vấn đề về mất cân bằng phân bố.
+    \item Thiết kế và cài đặt quy trình tiền xử lý ảnh và trích xuất đặc trưng, bao gồm các phương pháp phân vùng khuôn mặt để loại bỏ nhiễu nền.
+    \item Xây dựng và tinh chỉnh các mô hình học máy cho bài toán hồi quy, kết hợp đối chiếu giữa việc sử dụng đặc trưng thủ công và mạng nơ-ron học sâu.
+    \item Đánh giá hiệu năng mô hình một cách toàn diện thông qua các độ đo hồi quy chuẩn mực như $MAE$, $RMSE$ và hệ số xác định $R^2$.
+    \item Phân tích sai số chuyên sâu theo từng nhóm nhân khẩu học và thảo luận về các hạn chế tồn đọng của phương pháp.
 \end{itemize}
 
 \section{Tổng kết chương}
-Chương mở đầu đã trình bày tổng quan về bài toán hồi quy tuổi từ ảnh khuôn mặt, bao gồm bối cảnh thực tế và các khó khăn gặp phải. Từ đó, mục tiêu của đề tài được xác định rõ ràng là xây dựng một hệ thống hoàn chỉnh từ tiền xử lý, trích xuất đặc trưng đến thiết kế mô hình học máy để dự đoán tuổi. Những mục tiêu này là định hướng quan trọng để tiến hành các bước nghiên cứu và thực nghiệm ở các chương tiếp theo.
+Chương mở đầu đã phác thảo bức tranh toàn cảnh về bài toán hồi quy tuổi từ ảnh khuôn mặt. Bằng việc đi từ bối cảnh thực tiễn, phân tích các thách thức cốt lõi cho đến việc thiết lập định nghĩa toán học chặt chẽ, giới hạn của đề tài đã được khoanh vùng. Các mục tiêu cụ thể được đề ra không chỉ đóng vai trò là kim chỉ nam cho quá trình nghiên cứu, mà còn là khung tiêu chuẩn để tiến hành các bước thiết kế hệ thống, lập trình thực nghiệm và phân tích kết quả sẽ được trình bày chi tiết ở các chương tiếp theo.
